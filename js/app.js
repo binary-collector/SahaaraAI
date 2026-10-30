@@ -15,36 +15,17 @@ function init() {
     generateAutoAlerts();
     saveState();
 
-    // Authentication Gate
+    // Authentication Gate - always opens on the login window for this prototype
     if (typeof Auth !== "undefined") {
       Auth.init();
       if (!Auth.isAuthenticated()) {
         Auth.renderAuthScreen();
         return;
       }
-      Auth.syncWithState(State);
+      startAppAfterAuth();
+    } else {
+      render();
     }
-
-    render();
-    setInterval(() => {
-      try {
-        if (modalState) return; // user is filling a form
-        if (document.querySelector('#root form[data-monitor]:focus-within')) return; // never wipe a check-in being typed
-        generateAutoAlerts();
-        render();
-      } catch (e) { console.error('CareTrack: periodic refresh failed', e); }
-    }, 60000);
-    let lastDate = todayStr();
-    setInterval(() => {
-      try {
-        const current = todayStr();
-        if (current !== lastDate) {
-          lastDate = current;
-          generateAutoAlerts();
-          render();
-        }
-      } catch (e) { console.error('CareTrack: rollover check failed', e); }
-    }, 30000);
     window.addEventListener('resize', () => {
       const panel = document.getElementById('ai-panel');
       if (panel && AI.panelOpen) {
@@ -56,6 +37,37 @@ function init() {
     try { toast('CareTrack hit a startup error: ' + (e && e.message ? e.message : e), true); } catch (_) {}
   }
 }
+function startAppAfterAuth() {
+  if (window.__appStartedAfterAuth) {
+    render();
+    return;
+  }
+  window.__appStartedAfterAuth = true;
+  if (typeof Auth !== 'undefined' && Auth.currentUser) {
+    Auth.syncWithState(State);
+  }
+  render();
+  setInterval(() => {
+    try {
+      if (modalState) return;
+      if (document.querySelector('#root form[data-monitor]:focus-within')) return;
+      generateAutoAlerts();
+      render();
+    } catch (e) { console.error('CareTrack: periodic refresh failed', e); }
+  }, 60000);
+  let lastDate = todayStr();
+  setInterval(() => {
+    try {
+      const current = todayStr();
+      if (current !== lastDate) {
+        lastDate = current;
+        generateAutoAlerts();
+        render();
+      }
+    } catch (e) { console.error('CareTrack: rollover check failed', e); }
+  }, 30000);
+}
+window.startAppAfterAuth = startAppAfterAuth;
 window.addEventListener('error', (ev) => {
   console.error('CareTrack runtime error:', ev.message, ev.error);
 });

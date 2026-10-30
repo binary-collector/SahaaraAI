@@ -11,14 +11,12 @@ const Auth = {
 
   init() {
     this.seedDefaultUsers();
+    // Whenever this prototype is opened, always open on the login window
+    this.currentUser = null;
     try {
-      const savedSession = localStorage.getItem(this.SESSION_KEY);
-      if (savedSession) {
-        this.currentUser = JSON.parse(savedSession);
-      }
-    } catch (e) {
-      this.currentUser = null;
-    }
+      localStorage.removeItem(this.SESSION_KEY);
+      sessionStorage.removeItem(this.SESSION_KEY);
+    } catch (_) {}
   },
 
   seedDefaultUsers() {
@@ -171,8 +169,10 @@ const Auth = {
 
   logout() {
     this.currentUser = null;
+    if (typeof window !== 'undefined') window.__appStartedAfterAuth = false;
     try {
       localStorage.removeItem(this.SESSION_KEY);
+      sessionStorage.removeItem(this.SESSION_KEY);
     } catch (_) {}
     if (typeof toast === 'function') {
       toast('Signed out successfully.');
@@ -188,7 +188,9 @@ const Auth = {
         toast('Welcome to the Sahaara AI Feature Prototype!');
       }
       this.closeAuthScreen();
-      if (typeof render === 'function') {
+      if (typeof window.startAppAfterAuth === 'function') {
+        window.startAppAfterAuth();
+      } else if (typeof render === 'function') {
         render();
       }
     }
@@ -630,11 +632,11 @@ const Auth = {
       <form class="auth-form" onsubmit="event.preventDefault(); Auth.handleLoginSubmit();">
         <div class="auth-field">
           <label for="auth-email">Email Address</label>
-          <input type="email" id="auth-email" required placeholder="demo.prototype@sahaara.ai" autocomplete="email" autofocus>
+          <input type="email" id="auth-email" required value="demo.prototype@sahaara.ai" placeholder="demo.prototype@sahaara.ai" autocomplete="email" autofocus>
         </div>
         <div class="auth-field">
           <label for="auth-password">Password</label>
-          <input type="password" id="auth-password" required placeholder="••••••••" autocomplete="current-password">
+          <input type="password" id="auth-password" required value="password123" placeholder="••••••••" autocomplete="current-password">
         </div>
         <button type="submit" class="auth-btn-primary">
           Sign In to Sahaara AI
@@ -702,7 +704,9 @@ const Auth = {
       toast('Signed in successfully! Welcome back.');
     }
     this.closeAuthScreen();
-    if (typeof render === 'function') {
+    if (typeof window.startAppAfterAuth === 'function') {
+      window.startAppAfterAuth();
+    } else if (typeof render === 'function') {
       render();
     }
   },
@@ -737,7 +741,9 @@ const Auth = {
       saveState();
     }
     this.closeAuthScreen();
-    if (typeof render === 'function') {
+    if (typeof window.startAppAfterAuth === 'function') {
+      window.startAppAfterAuth();
+    } else if (typeof render === 'function') {
       render();
     }
   },
@@ -768,3 +774,4 @@ const Auth = {
     if (emergencyFab) emergencyFab.style.display = '';
   }
 };
+window.Auth = Auth;
