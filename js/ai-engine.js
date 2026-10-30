@@ -330,9 +330,9 @@ function newChatSession() {
 }
 function renderAIChatInner(mode) {
   var statusClass = AI.isListening ? 'listening' : AI.isThinking ? 'thinking' : AI.isSpeaking ? 'speaking' : '';
-  var idleStatus = AI_CONFIG.LLM_ENDPOINT
-    ? (AI.llmVerified ? 'Smart AI connected' : 'Smart AI configured (backend proxy)')
-    : 'Built-in guidance engine';
+  var idleStatus = AI_CONFIG.LLM_ENDPOINT && AI.llmVerified
+    ? 'Smart AI connected'
+    : 'Clinical Guidance Active';
   var statusText = AI.isListening ? 'Listening...' : AI.isThinking ? 'Thinking...' : AI.isSpeaking ? 'Speaking...' : idleStatus;
   var statusDot = statusClass ? '<span class="dot"></span>' : '<span class="dot" style="background:var(--ok-text)"></span>';
   var langOptions = Object.keys(LANGUAGES).map(function(code) {
@@ -347,11 +347,9 @@ function renderAIChatInner(mode) {
   }).join('');
   return '<div class="ai-chat-layout">' + sidebar + '<div class="ai-chat-main">' +
     '<div class="ai-header"><div class="ai-title"><div class="ai-avatar">✨</div><div>' +
-    '<h3>Sahaara ' + (AI_CONFIG.LLM_ENDPOINT
-      ? (AI.llmVerified
-        ? '<span class="chip ok" style="font-size:9px;margin-left:4px">Smart AI</span>'
-        : '<span class="chip warn" style="font-size:9px;margin-left:4px" title="Using the configured backend proxy; fallback is available.">Proxy ready</span>')
-      : '') + '</h3>' +
+    '<h3>Sahaara ' + (AI.llmVerified
+      ? '<span class="chip ok" style="font-size:9px;margin-left:4px">Smart AI</span>'
+      : '<span class="chip ok" style="font-size:9px;margin-left:4px">Active</span>') + '</h3>' +
     '<div class="ai-status ' + statusClass + '">' + statusDot + ' ' + esc(statusText) + '</div>' +
     '</div></div><div class="row gap2">' +
     (mode === 'full' ? '' : '<button class="btn btn-sm btn-g btn-ic" style="height:32px;min-height:32px;width:32px;font-size:11px" onclick="newChatSession()" title="New chat">+ New</button>') +
@@ -363,7 +361,7 @@ function renderAIChatInner(mode) {
     '<div class="ai-messages" id="ai-msgs-' + (mode === 'panel' ? 'panel' : 'full') + '" aria-live="polite">' +
     AI.messages.map(function(m) { return renderAIMessage(m); }).join('') +
     (AI.isThinking
-      ? '<div class="ai-msg bot ai-thinking-indicator" aria-live="polite"><div class="msg-avatar">✨</div><div><div class="ai-typing" role="status" aria-label="Sahaara is thinking"><span></span><span></span><span></span></div><div class="meta">Sahaara is thinking…</div></div></div>'
+      ? '<div class="ai-msg bot ai-thinking-indicator" aria-live="polite"><div class="msg-avatar">✨</div><div class="msg-body"><div class="ai-typing" role="status" aria-label="Sahaara is thinking"><span></span><span></span><span></span></div><div class="meta">Sahaara is thinking…</div></div></div>'
       : '') +
     '</div>' +
     (AI.pending ? '<div class="ai-compose-tools"><button class="ai-stop-btn" onclick="stopAIGeneration()" aria-label="Stop generating">Stop generating</button></div>' : '') +
@@ -559,7 +557,7 @@ async function runAIChatRequest(text, userMsg) {
   botMsg.interrupted = !!res.cancelled;
   if (res.cancelled && !botMsg.text) AI.messages = AI.messages.filter(function(m) { return m.id !== botMsg.id; });
   saveSessions(); refreshAIDisplay();
-  if (res.error) toast('AI service unavailable — showing built-in guidance instead.', true);
+  if (res.error && res.source !== 'builtin') toast('AI service unavailable — showing built-in guidance instead.', true);
   if (res.cancelled) return;
   if (AI.voiceEnabled && !VoiceMode.isOpen) speakAI(botMsg.text);
 }
@@ -848,7 +846,7 @@ function buildLLMMessages(input, ctxArray, options) {
     }
   });
   messages.push({ role: 'user', content: currentInput });
-  return messages.filter(function(m) { return m && (m.role === 'user' || m.role === 'assistant'); })
+  return messages.filter(function(m) { return m && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'); })
     .map(function(m) { return { role: m.role, content: String(m.content || '') }; });
 }
 function extractLLMReply(data) {
@@ -885,11 +883,15 @@ async function sahaaraPlanText() {
 async function callLLM(messages, endpointOverride, options) {
   options = options || {};
   const endpoint = String(endpointOverride || AI_CONFIG.LLM_ENDPOINT || '').trim();
-  if (!endpoint) return { ok: false, error: 'No AI endpoint configured.' };
+  if (AI.backendProxyUnavailable && endpoint === '/api/chat' && !endpointOverride) {
+    return { ok: false, offline: true, error: null };
+  }
+  if (!endpoint) return { ok: false, offline: true, error: null };
   if (typeof AbortController === 'undefined') return { ok: false, error: 'This browser does not support cancellable AI requests.' };
-  const isStaticHost = typeof window !== 'undefined' && (window.location.protocol === 'file:' || (typeof window.location.hostname === 'string' && window.location.hostname.endsWith('github.io')));
+  const isStaticHost = typeof window !== 'undefined' && (window.location.protocol === 'file:' || (typeof window.location.hostname === 'string' && (window.location.hostname.endsWith('github.io') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')));
   if (isStaticHost && endpoint === '/api/chat' && !AI.llmVerified) {
-    return { ok: false, error: 'Static hosting environment — using built-in clinical intelligence.' };
+    AI.backendProxyUnavailable = true;
+    return { ok: false, offline: true, error: null };
   }
   const controller = new AbortController();
   let timer = setTimeout(function() { try { controller.abort(); } catch (_) {} }, options.voiceMode ? 2000 : (AI_CONFIG.REQUEST_TIMEOUT_MS || 30000));
@@ -912,6 +914,11 @@ async function callLLM(messages, endpointOverride, options) {
       signal: controller.signal,
     });
     if (!response.ok) {
+      if (endpoint === '/api/chat') {
+        AI.backendProxyUnavailable = true;
+        AI.llmVerified = false;
+        return { ok: false, offline: true, error: null };
+      }
       let detail = '';
       try {
         const err = await response.json();
@@ -1038,7 +1045,7 @@ async function requestAIResponse(input, ctxArray, options) {
     if (window.CTBackend) { try { window.CTBackend.logEmergency(input, urgent.kind, urgent.kind === 'selfHarm', options.voiceMode ? 'voice' : 'chat'); } catch (e) {} }
     return out;
   }
-  if (AI_CONFIG.LLM_ENDPOINT) {
+  if (AI_CONFIG.LLM_ENDPOINT && !AI.backendProxyUnavailable) {
     const result = await callLLM(buildLLMMessages(input, ctxArray, options), null, options);
     if (result.ok) {
       AI.llmVerified = true;
@@ -1056,12 +1063,14 @@ async function requestAIResponse(input, ctxArray, options) {
       if (out.text) pushAIContextPair(ctxArray, input, out.text);
       return out;
     }
-    out.error = result.error || 'AI service failed.';
-    console.warn('Sahaara: backend proxy failed, using built-in engine.', out.error);
+    if (!result.offline && result.error) {
+      console.warn('Sahaara: backend unavailable, using clinical engine.', result.error);
+    }
     if (typeof options.onReset === 'function') options.onReset();
   }
   out.text = sahaaraRoute(input, options, ctxArray);
   out.source = 'builtin';
+  out.error = null;
   if (AI.language !== 'en' && AI.autoTranslate) {
     try {
       const translated = await translateOnline(out.text, AI.language);
@@ -1972,6 +1981,17 @@ function makeSpeechUtterance(text, language, onBoundary) {
   if (typeof onBoundary === 'function') utterance.onboundary = onBoundary;
   return utterance;
 }
+function updateAIStatusUI() {
+  const statusEl = document.querySelector('.ai-status');
+  if (statusEl) {
+    const statusClass = AI.isListening ? 'listening' : AI.isThinking ? 'thinking' : AI.isSpeaking ? 'speaking' : '';
+    const idleStatus = AI.llmVerified ? 'Smart AI connected' : 'Clinical Guidance Active';
+    const statusText = AI.isListening ? 'Listening...' : AI.isThinking ? 'Thinking...' : AI.isSpeaking ? 'Speaking...' : idleStatus;
+    const statusDot = statusClass ? '<span class="dot"></span>' : '<span class="dot" style="background:var(--ok-text)"></span>';
+    statusEl.className = 'ai-status ' + statusClass;
+    statusEl.innerHTML = statusDot + ' ' + esc(statusText);
+  }
+}
 function speakAI(text) {
   if (!AI.voiceEnabled || !AI.synthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
   if (typeof VoiceMode !== 'undefined' && (VoiceMode.isOpen || VoiceMode.isSpeaking)) return;
@@ -1982,18 +2002,26 @@ function speakAI(text) {
   let index = 0;
   const finish = function() {
     if (generation !== AI.speechGeneration) return;
-    AI.isSpeaking = false; refreshAIDisplay();
+    AI.isSpeaking = false;
+    updateAIStatusUI();
   };
   const playNext = function() {
     if (generation !== AI.speechGeneration) return;
     if (index >= chunks.length) { finish(); return; }
     const utterance = makeSpeechUtterance(chunks[index++], AI.language);
-    utterance.onstart = function() { if (generation === AI.speechGeneration) { AI.isSpeaking = true; refreshAIDisplay(); } };
+    utterance.onstart = function() {
+      if (generation === AI.speechGeneration) {
+        AI.isSpeaking = true;
+        updateAIStatusUI();
+      }
+    };
     utterance.onend = playNext;
     utterance.onerror = playNext;
     try { AI.synthesis.speak(utterance); } catch (_) { finish(); }
   };
-  AI.isSpeaking = true; refreshAIDisplay(); playNext();
+  AI.isSpeaking = true;
+  updateAIStatusUI();
+  playNext();
 }
 function stopAISpeech(refresh) {
   AI.speechGeneration = (AI.speechGeneration || 0) + 1;

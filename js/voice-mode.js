@@ -388,8 +388,8 @@ let voiceMicPermissionPromise = null;
 function prepareVoiceMicrophone() {
   if (voiceMicPermissionGrantedForPage) return Promise.resolve({ ok: true });
   if (voiceMicPermissionPromise) return voiceMicPermissionPromise;
-  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    return Promise.resolve({ ok: false, reason: 'secure' });
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return Promise.resolve({ ok: !!(window.SpeechRecognition || window.webkitSpeechRecognition), reason: 'mediaDevices_unavailable' });
   }
   const checkExistingGrant = navigator.permissions && navigator.permissions.query
     ? navigator.permissions.query({ name: 'microphone' }).then(function(status) {
@@ -415,6 +415,10 @@ function prepareVoiceMicrophone() {
     else if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') reason = 'no-device';
     else if (name === 'NotReadableError' || name === 'TrackStartError') reason = 'busy';
     else if (!window.isSecureContext) reason = 'secure';
+
+    if ((window.SpeechRecognition || window.webkitSpeechRecognition) && reason !== 'denied') {
+      return { ok: true, fallback: true };
+    }
     return { ok: false, reason: reason };
   }).finally(function() { voiceMicPermissionPromise = null; });
   return voiceMicPermissionPromise;
@@ -425,7 +429,7 @@ function openVoiceMode() {
     try { AI.activeController.abort('voice-barge-in'); } catch (_) {}
     AI.requestSeq++; AI.pending = false; AI.isThinking = false; AI.currentStreamMessageId = null;
   }
-  VoiceMode.isOpen = true; VoiceMode.userStopped = false; VoiceMode.currentTranscript = ''; VoiceMode.noticeText = 'Connecting to your microphone…'; VoiceMode.emergencyCard = null; VoiceMode.emergencyActive = false; VoiceMode.replyMessage = null;
+  VoiceMode.isOpen = true; VoiceMode.userStopped = false; VoiceMode.micDenied = false; VoiceMode.currentTranscript = ''; VoiceMode.noticeText = 'Connecting to microphone…'; VoiceMode.emergencyCard = null; VoiceMode.emergencyActive = false; VoiceMode.replyMessage = null;
   if (window.CTBackend) { try { window.CTBackend.logEvent('session_open', { supported: !!(window.SpeechRecognition || window.webkitSpeechRecognition), secure: !!window.isSecureContext }); } catch (e) {} }
   VoiceMode.context = (AI.conversationContext || []).slice();
   initializeVoiceTranscriptHistory();
@@ -437,19 +441,24 @@ function openVoiceMode() {
     if (!VoiceMode.isOpen) return;
     if (result.ok) {
       VoiceMode.noticeText = '';
+      VoiceMode.micDenied = false;
       startVoiceListening();
       return;
     }
-    VoiceMode.userStopped = true;
-    VoiceMode.micDenied = result.reason === 'denied';
-    if (window.CTBackend) { try { window.CTBackend.logEvent('mic_denied', { reason: result.reason }); } catch (e) {} }
-    VoiceMode.noticeText = result.reason === 'secure'
-      ? 'For microphone access, open CareTrack from HTTPS or http://localhost. You can still type below.'
-      : result.reason === 'no-device'
-        ? 'No microphone was found. Connect a microphone or type your message below.'
-        : result.reason === 'busy'
-          ? 'Your microphone may be in use by another app. Close that app and tap the orb to retry.'
-          : 'Microphone access is blocked. In Chrome, open the site controls beside the address bar, set Microphone to Allow, then reopen Voice AI. You can still type below.';
+    if (result.reason === 'denied') {
+      VoiceMode.userStopped = true;
+      VoiceMode.micDenied = true;
+      if (window.CTBackend) { try { window.CTBackend.logEvent('mic_denied', { reason: result.reason }); } catch (e) {} }
+      VoiceMode.noticeText = 'Microphone access is blocked. In your browser settings, set Microphone to Allow, then tap the orb. You can still type below.';
+    } else if (result.reason === 'no-device') {
+      VoiceMode.userStopped = true;
+      VoiceMode.noticeText = 'No microphone was found. Connect a microphone or type below.';
+    } else {
+      VoiceMode.noticeText = '';
+      VoiceMode.micDenied = false;
+      startVoiceListening();
+      return;
+    }
     renderVoiceMode();
   });
 }
@@ -470,11 +479,6 @@ function closeVoiceMode() {
 function renderVoiceMode() {
   const el = document.getElementById('voice-fullscreen');
   if (!el || !VoiceMode.isOpen) return;
-  const savedPageScroll = el.scrollTop || 0;
-  const pageWasAtBottom = el.scrollHeight > el.clientHeight + 1 && el.scrollHeight - el.scrollTop - el.clientHeight < 24;
-  const previousHistoryList = el.querySelector('.voice-history-list');
-  const savedHistoryScroll = previousHistoryList ? previousHistoryList.scrollTop : 0;
-  const historyWasAtBottom = !previousHistoryList || previousHistoryList.scrollHeight - previousHistoryList.scrollTop - previousHistoryList.clientHeight < 24;
   if (VoiceMode.srSupported === null) VoiceMode.srSupported = speechRecognitionSupported();
   const orbState = VoiceMode.isSpeaking ? 'speaking' : VoiceMode.isThinking ? 'thinking' : VoiceMode.isListening ? 'listening' : 'idle';
   const stateLabel = { idle: 'Idle', listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking' }[orbState];
@@ -484,8 +488,14 @@ function renderVoiceMode() {
     : (!VoiceMode.srSupported ? 'Voice input is not supported here — type below'
     : VoiceMode.micDenied ? 'Microphone unavailable — type below'
     : 'Tap the orb to start'));
-  let waveBars = '';
-  for (let i = 0; i < 24; i++) waveBars += '<div class="voice-wave-bar ' + ((VoiceMode.isListening || VoiceMode.isSpeaking) ? 'active' : '') + '" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"></div>';
+  
+  const transcriptHtml = VoiceMode.currentTranscript
+    ? '<div class="user-said" aria-live="polite">“' + esc(VoiceMode.currentTranscript) + '”</div>'
+    : '<div class="status-text" aria-live="polite">' + esc(statusText) + '</div>';
+  const lastBot = VoiceMode.conversationHistory.filter(function(item) { return item.role === 'bot'; }).pop();
+  const responseText = VoiceMode.replyMessage && VoiceMode.replyMessage.text ? VoiceMode.replyMessage.text : (lastBot && VoiceMode.isSpeaking ? lastBot.text : '');
+  const responseHtml = responseText ? '<div class="ai-response" aria-live="polite">' + esc(String(responseText).slice(0, 420)) + (String(responseText).length > 420 ? '…' : '') + '</div>' : '';
+
   const recentTurns = VoiceMode.conversationHistory.slice(-12);
   const historyHtml = recentTurns.map(function(item) {
     const isUser = item.role === 'user';
@@ -495,22 +505,82 @@ function renderVoiceMode() {
     return '<article class="voice-history-item ' + (isUser ? 'from-user' : 'from-assistant') + '"><div class="voice-history-meta"><span>' + (isUser ? '🎤 You' : '✨ Sahaara') + '</span>' + (timeLabel ? '<time>' + esc(timeLabel) + '</time>' : '') + '</div><div class="vh-bot">' + esc(text.slice(0, 260)) + (text.length > 260 ? '…' : '') + '</div></article>';
   }).join('');
   const historyContent = historyHtml || '<div class="voice-history-empty">Your voice messages and replies will appear here.</div>';
+
+  const emergencyHtml = VoiceMode.emergencyCard
+    ? '<div class="voice-emergency-card" role="alert"><strong>' + esc(VoiceMode.emergencyCard.title) + '</strong><p>' + esc(VoiceMode.emergencyCard.message) + '</p>' +
+      (VoiceMode.emergencyCard.support ? '<p>' + esc(VoiceMode.emergencyCard.support) + '</p>' : '') +
+      '<a href="tel:112">☎ ' + esc(VoiceMode.emergencyCard.callLabel) + '</a></div>' : '';
+
+  // IN-PLACE UPDATE: if already mounted, update nodes directly to prevent 3D canvas loss and UI flicker
+  const existingWrap = el.querySelector('#voice-orb-wrap');
+  if (existingWrap) {
+    existingWrap.className = 'voice-orb-container ' + orbState;
+    const glow = el.querySelector('.voice-orb-glow');
+    if (glow) glow.className = 'voice-orb-glow ' + orbState;
+    const orbLabel = el.querySelector('.voice-orb-label');
+    if (orbLabel) orbLabel.textContent = statusText;
+    const canvas = el.querySelector('#voice-orb-3d');
+    if (canvas) canvas.setAttribute('aria-label', statusText);
+    const stateEl = el.querySelector('.voice-state-label');
+    if (stateEl) {
+      stateEl.className = 'voice-state-label state-' + orbState;
+      stateEl.textContent = 'State: ' + stateLabel;
+    }
+    const transcriptEl = el.querySelector('.voice-transcript');
+    if (transcriptEl) transcriptEl.innerHTML = transcriptHtml + responseHtml;
+
+    let emContainer = el.querySelector('.voice-emergency-card');
+    if (emergencyHtml) {
+      if (emContainer) emContainer.outerHTML = emergencyHtml;
+      else if (transcriptEl) transcriptEl.insertAdjacentHTML('afterend', emergencyHtml);
+    } else if (emContainer) {
+      emContainer.remove();
+    }
+
+    const muteBtn = el.querySelector('.voice-controls button:first-child');
+    if (muteBtn) {
+      muteBtn.setAttribute('aria-pressed', String(VoiceMode.muted));
+      muteBtn.setAttribute('title', VoiceMode.muted ? 'Unmute AI voice' : 'Mute AI voice');
+      muteBtn.innerHTML = ic(VoiceMode.muted ? 'mic-off' : 'volume-2', 20);
+    }
+    const autoListenBtn = el.querySelector('.voice-controls button:last-child');
+    if (autoListenBtn) {
+      autoListenBtn.setAttribute('aria-pressed', String(VoiceMode.autoListen));
+      autoListenBtn.setAttribute('title', VoiceMode.autoListen ? 'Disable auto-listen' : 'Enable auto-listen');
+      autoListenBtn.innerHTML = ic(VoiceMode.autoListen ? 'mic' : 'mic-off', 20);
+    }
+
+    const historyList = el.querySelector('.voice-history-list');
+    if (historyList) {
+      const historyWasAtBottom = historyList.scrollHeight - historyList.scrollTop - historyList.clientHeight < 24;
+      historyList.innerHTML = historyContent;
+      if (historyWasAtBottom) historyList.scrollTop = historyList.scrollHeight;
+    }
+    const historyCount = el.querySelector('.voice-history-count');
+    if (historyCount) historyCount.textContent = Math.min(12, VoiceMode.conversationHistory.length);
+
+    if (VoiceMode.voice3dOrb) {
+      VoiceMode.voice3dOrb.setState(orbState);
+      if (orbState === 'listening') VoiceMode.voice3dOrb.enableAudioReactivity();
+      else VoiceMode.voice3dOrb.disableAudioReactivity();
+    }
+    _animateVoiceWaveBars();
+    const fab = document.getElementById('voice-fab');
+    if (fab) fab.classList.add('active');
+    return;
+  }
+
+  // FULL INITIAL MOUNT
+  let waveBars = '';
+  for (let i = 0; i < 24; i++) waveBars += '<div class="voice-wave-bar ' + ((VoiceMode.isListening || VoiceMode.isSpeaking) ? 'active' : '') + '" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"></div>';
+
   const dbBadgeHtml = '<span class="voice-db-badge ' + esc(VoiceMode.dbStatus || 'checking') + '" role="status"><span class="voice-db-dot" aria-hidden="true"></span>' + esc(voiceDatabaseStatusLabel()) + '</span>';
-  const transcriptHtml = VoiceMode.currentTranscript
-    ? '<div class="user-said" aria-live="polite">“' + esc(VoiceMode.currentTranscript) + '”</div>'
-    : '<div class="status-text" aria-live="polite">' + esc(statusText) + '</div>';
-  const lastBot = VoiceMode.conversationHistory.filter(function(item) { return item.role === 'bot'; }).pop();
-  const responseText = VoiceMode.replyMessage && VoiceMode.replyMessage.text ? VoiceMode.replyMessage.text : (lastBot && VoiceMode.isSpeaking ? lastBot.text : '');
-  const responseHtml = responseText ? '<div class="ai-response" aria-live="polite">' + esc(String(responseText).slice(0, 420)) + (String(responseText).length > 420 ? '…' : '') + '</div>' : '';
   let langSelector = '<select class="input voice-language-select" onchange="setAILanguage(this.value)" title="Language" aria-label="Language">';
   Object.keys(LANGUAGES).forEach(function(code) {
     langSelector += '<option value="' + esc(code) + '"' + (AI.language === code ? ' selected' : '') + ' style="color:#000">' + LANGUAGES[code].flag + ' ' + esc(LANGUAGES[code].native) + '</option>';
   });
   langSelector += '</select>';
-  const emergencyHtml = VoiceMode.emergencyCard
-    ? '<div class="voice-emergency-card" role="alert"><strong>' + esc(VoiceMode.emergencyCard.title) + '</strong><p>' + esc(VoiceMode.emergencyCard.message) + '</p>' +
-      (VoiceMode.emergencyCard.support ? '<p>' + esc(VoiceMode.emergencyCard.support) + '</p>' : '') +
-      '<a href="tel:112">☎ ' + esc(VoiceMode.emergencyCard.callLabel) + '</a></div>' : '';
+
   el.innerHTML = '<div class="voice-header"><h3>✨ Sahaara <span class="vbadge">Voice AI</span>' +
     (AI_CONFIG.LLM_ENDPOINT && AI.llmVerified ? ' <span class="vbadge" style="background:rgba(45,212,191,.18);color:#99f6e4">Smart AI</span>' : '') + '</h3>' +
     '<div class="row gap2 voice-header-actions">' + langSelector + dbBadgeHtml + '<button class="voice-close-btn" onclick="closeVoiceMode()" aria-label="Close voice mode">' + ic('x', 20) + '</button></div></div>' +
@@ -539,11 +609,9 @@ function renderVoiceMode() {
     '</div>' +
     '<div class="voice-text-fallback"><input type="text" id="voice-text-input" class="voice-text-input" placeholder="' + (VoiceMode.srSupported ? 'Prefer typing? Ask Sahaara here…' : 'Voice input is unavailable — type your question here…') + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();sendVoiceTextInput()}">' +
     '<button class="voice-text-send" onclick="sendVoiceTextInput()" aria-label="Send typed message">' + ic('send', 16) + '</button></div>' +
-    '<div class="voice-transcript-note">Saved as text on this device and in Sahaara chat history. CareTrack does not retain raw audio.</div>' +
+    '<div class="voice-transcript-note">Saved as text on this device and in Sahaara chat history. Sahaara AI does not retain raw audio.</div>' +
     '<section class="voice-history" id="voice-history" aria-label="Saved voice transcript history"><div class="voice-history-head"><div><h4>Recent turns</h4><span>Text only · stored locally</span></div><span class="voice-history-count" title="Recent messages shown">' + Math.min(12, VoiceMode.conversationHistory.length) + '</span></div><div class="voice-history-list">' + historyContent + '</div></section>';
-  el.scrollTop = pageWasAtBottom ? el.scrollHeight : savedPageScroll;
-  const currentHistoryList = el.querySelector('.voice-history-list');
-  if (currentHistoryList) currentHistoryList.scrollTop = historyWasAtBottom ? currentHistoryList.scrollHeight : Math.min(savedHistoryScroll, Math.max(0, currentHistoryList.scrollHeight - currentHistoryList.clientHeight));
+
   _initVoice3DOrb(orbState);
   _animateVoiceWaveBars();
   const fab = document.getElementById('voice-fab');
@@ -695,7 +763,15 @@ function startVoiceListening(options) {
 }
 function voiceOrbTap() {
   VoiceMode.netRetries = 0;
-  if (VoiceMode.isSpeaking || VoiceMode.isThinking || VoiceMode.pending) { startVoiceListening(); return; }
+  VoiceMode.micDenied = false;
+  VoiceMode.userStopped = false;
+  VoiceMode.noticeText = '';
+  if (VoiceMode.isSpeaking || VoiceMode.isThinking || VoiceMode.pending) {
+    cancelVoicePlayback('voice-barge-in', true);
+    VoiceMode.pending = false; VoiceMode.isThinking = false;
+    startVoiceListening();
+    return;
+  }
   if (VoiceMode.isListening) { stopVoiceListening(); return; }
   startVoiceListening();
 }
@@ -1425,7 +1501,7 @@ async function processVoiceInput(text) {
   if (safeResult.replaced) botMessage.safetyReplaced = true;
   VoiceMode.speechBuffer = ''; updateVoiceAnswerOnly();
   persistVoiceAssistantTranscript(sessionUserMessage, botMessage.text, { source: botMessage.source, error: botMessage.error, interrupted: !!result.cancelled });
-  if (result.error) toast('AI service unavailable. This reply uses built-in guidance, not the AI provider.', true);
+  if (result.error && result.source !== 'builtin') toast('AI service unavailable. This reply uses built-in guidance, not the AI provider.', true);
   if (botMessage.text) { VoiceMode.speechBuffer = ''; enqueueVoiceSentence(botMessage.text); }
   VoiceMode.speechStreamDone = true; drainVoiceSpeechBuffer(true);
   if (!VoiceMode.speechPlaying && !VoiceMode.fillerActive) {
