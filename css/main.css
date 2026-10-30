@@ -1,0 +1,30 @@
+/* ==========================================================================
+   Sahaara AI — Main Stylesheet
+   Design Tokens, Color Palettes, Typography, Layout & Core Navigation
+   ========================================================================== */
+
+:root{--sp1:4px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:24px;--sp6:32px;--sp7:48px;--r1:8px;--r2:12px;--r3:16px;--r4:24px;--fs-xs:13px;--fs-sm:14px;--fs-md:16px;--fs-lg:18px;--fs-xl:22px;--fs-2xl:28px;--fs-3xl:36px;--font:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--brand-50:#f0fdfa;--brand-100:#ccfbf1;--brand-200:#99f6e4;--brand-300:#5eead4;--brand-400:#2dd4bf;--brand-500:#14b8a6;--brand-600:#0d9488;--brand-700:#0f766e;--brand-800:#115e59;--brand-900:#134e4a;--bg:#f8fafc;--surface:#ffffff;--surface-2:#f1f5f9;--surface-3:#e2e8f0;--line:#e2e8f0;--line-2:#cbd5e1;--text:#0f172a;--text-2:#475569;--text-3:#94a3b8;--text-inv:#ffffff;--brand:var(--brand-600);--brand-hover:var(--brand-700);--brand-soft:var(--brand-50);--brand-soft-text:var(--brand-800);--on-brand:#fff;--ok-bg:#dcfce7;--ok-text:#166534;--info-bg:#dbeafe;--info-text:#1e40af;--warn-bg:#fef3c7;--warn-text:#92400e;--danger-bg:#fee2e2;--danger-text:#991b1b;--danger-line:#fca5a5;--neutral-bg:var(--surface-2);--neutral-text:var(--text-2);--skipped-bg:#f3e8ff;--skipped-text:#6b21a8;--e1:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);--e2:0 8px 24px -12px rgba(0,0,0,.18);--grad:linear-gradient(135deg,var(--brand-500),var(--brand-700));color-scheme:light;}[data-theme=dark]{--bg:#0f172a;--surface:#1e293b;--surface-2:#334155;--surface-3:#475569;--line:#334155;--line-2:#475569;--text:#f1f5f9;--text-2:#cbd5e1;--text-3:#94a3b8;--brand-50:#042f2e;--brand-100:#0a3d3a;--brand-200:#115e59;--brand-300:#0f766e;--brand-400:#14b8a6;--brand-500:#2dd4bf;--brand-600:#5eead4;--brand-700:#99f6e4;--brand-800:#ccfbf1;--brand-900:#f0fdfa;--brand:#2dd4bf;--brand-hover:#5eead4;--brand-soft:#042f2e;--brand-soft-text:#99f6e4;--on-brand:#042f2e;--ok-bg:#052e16;--ok-text:#86efac;--info-bg:#172554;--info-text:#93c5fd;--warn-bg:#451a03;--warn-text:#fcd34d;--danger-bg:#450a0a;--danger-text:#fca5a5;--danger-line:#7f1d1d;--skipped-bg:#3b0764;--skipped-text:#d8b4fe;--e1:0 1px 3px rgba(0,0,0,.3);--e2:0 8px 24px -12px rgba(0,0,0,.6);--grad:linear-gradient(135deg,#0f766e,#0d9488);color-scheme:dark;}*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;font-size:var(--fs-md);line-height:1.6;overflow-x:hidden}button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}input,textarea,select{font:inherit;color:inherit}a{color:inherit;text-decoration:none}img,svg{max-width:100%}.hidden{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}:focus-visible{outline:2px solid var(--brand-500);outline-offset:2px;border-radius:6px}svg.ic{width:20px;height:20px;flex-shrink:0;stroke-width:1.9}.btn svg.ic{width:18px;height:18px}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ==========================================================================
+   Responsive Viewport & Safe Area Tokens (Desktop, Android, Tablet)
+   ========================================================================== */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}

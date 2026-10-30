@@ -1,0 +1,23 @@
+{
+  "name": "sahaara-ai",
+  "version": "1.0.0",
+  "description": "Intelligent Personal Health, Mental Wellbeing & Clinical Prescription Tracking Ecosystem with Conversational Voice AI, Real-Time 3D WebGL Orb, and Emergency SOS",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": [
+    "health-tracker",
+    "wellbeing",
+    "mental-health",
+    "conversational-ai",
+    "threejs",
+    "webgl",
+    "speech-recognition",
+    "prescriptions",
+    "emergency-sos"
+  ],
+  "author": "binary-collector",
+  "license": "MIT"
+}

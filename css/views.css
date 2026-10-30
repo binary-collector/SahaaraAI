@@ -1,0 +1,35 @@
+/* ==========================================================================
+   Sahaara AI — Views & Pages
+   Dashboard, Mood Check-in, Journal, Reflection, Toolkit & Reports Styling
+   ========================================================================== */
+
+.task-card{border:1px solid var(--line);border-radius:var(--r2);padding:var(--sp4);background:var(--surface);transition:.15s}.task-card:hover{border-color:var(--brand-300)}.task-card.completed-card{background:var(--ok-bg);border-color:transparent}.task-card.skipped-card{background:var(--skipped-bg);border-color:transparent;opacity:.85}.task-card.missed-card{border-left:4px solid var(--danger-text)}.task-card.due-card{border-left:4px solid var(--warn-text)}.cat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}.cat-diet{background:#fef3c7;color:#92400e}.cat-activity{background:#dcfce7;color:#166534}.cat-sleep{background:#ede9fe;color:#5b21b6}.cat-hydration{background:#dbeafe;color:#1e40af}.cat-stress{background:#fce7f3;color:#9d174d}.cat-breathing{background:#ccfbf1;color:#0f766e}.cat-other{background:var(--surface-2);color:var(--text-2)}.chart-container{position:relative;width:100%;min-height:200px}.chart-container svg{width:100%;height:100%}.test-result{padding:8px 12px;border-radius:8px;margin-bottom:4px;font-size:var(--fs-sm);display:flex;align-items:center;gap:8px}.test-result.pass{background:var(--ok-bg);color:var(--ok-text)}.test-result.fail{background:var(--danger-bg);color:var(--danger-text)}
+.more-sheet{width:100%;max-width:560px;max-height:85vh;max-height:85dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--surface);border-radius:20px 20px 0 0;padding:8px 12px calc(16px+env(safe-area-inset-bottom,0px));box-shadow:0 -12px 40px rgba(0,0,0,.25);animation:moreUp .25s ease both}.more-grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:4px auto 8px}.more-head{display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px}.more-head h2{font-size:16px;margin:0}.more-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.more-item{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:14px;font-weight:500;text-align:left;cursor:pointer}.more-item svg{flex-shrink:0;color:var(--text-3)}.more-item .chip{margin-left:auto}.more-item.on{background:var(--brand-soft);color:var(--brand-soft-text);border-color:var(--brand-400);font-weight:600}.more-item.on svg{color:inherit}.more-item:focus-visible{outline:2px solid var(--brand);outline-offset:2px}@media(max-width:380px){.more-list{grid-template-columns:1fr}}body.more-open{overflow:hidden}@keyframes moreUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}@keyframes moreFade{from{opacity:0}to{opacity:1}}@media(min-width:1025px){.more-overlay{display:none}}
+.field-label{display:block;font-size:var(--fs-sm);font-weight:600;color:var(--text);margin-bottom:7px}.input{display:block;width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);padding:11px 12px;font:inherit;line-height:1.45}.input:focus{outline:2px solid var(--brand);outline-offset:2px}textarea.input{resize:vertical;min-height:84px}@media(max-width:600px){.input{font-size:16px}.page-h{gap:12px;align-items:flex-start}.page-h .btn{white-space:normal}}
+
+/* ==========================================================================
+   Responsive Views & Touch Improvements
+   ========================================================================== */
+@media (max-width: 640px) {
+  .task-card {
+    padding: 14px 12px;
+    margin-bottom: 10px;
+  }
+  .task-card .btn {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .user-account-badge {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  .user-account-badge > div {
+    width: 100%;
+  }
+  .user-account-badge button {
+    width: 100%;
+    justify-content: center;
+  }
+}
