@@ -887,8 +887,12 @@ async function callLLM(messages, endpointOverride, options) {
   const endpoint = String(endpointOverride || AI_CONFIG.LLM_ENDPOINT || '').trim();
   if (!endpoint) return { ok: false, error: 'No AI endpoint configured.' };
   if (typeof AbortController === 'undefined') return { ok: false, error: 'This browser does not support cancellable AI requests.' };
+  const isStaticHost = typeof window !== 'undefined' && (window.location.protocol === 'file:' || (typeof window.location.hostname === 'string' && window.location.hostname.endsWith('github.io')));
+  if (isStaticHost && endpoint === '/api/chat' && !AI.llmVerified) {
+    return { ok: false, error: 'Static hosting environment — using built-in clinical intelligence.' };
+  }
   const controller = new AbortController();
-  let timer = setTimeout(function() { try { controller.abort(); } catch (_) {} }, options.voiceMode ? 7000 : (AI_CONFIG.REQUEST_TIMEOUT_MS || 30000));
+  let timer = setTimeout(function() { try { controller.abort(); } catch (_) {} }, options.voiceMode ? 2000 : (AI_CONFIG.REQUEST_TIMEOUT_MS || 30000));
   if (!endpointOverride) AI.activeController = controller;
   let accumulated = '';
   let didStream = false;

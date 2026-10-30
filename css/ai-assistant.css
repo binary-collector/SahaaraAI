@@ -34,3 +34,76 @@
   }
   .ai-compose { padding-bottom: max(10px, var(--safe-bottom)); }
 }
+
+/* ==========================================================================
+   Voice Mode Quick Action Bar & Resilient Interactive Voice Chips
+   ========================================================================== */
+.voice-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  max-width: 540px;
+  margin: 12px auto 14px;
+  padding: 0 12px;
+  z-index: 20;
+}
+.voice-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  user-select: none;
+  font-family: inherit;
+}
+.voice-chip-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.42);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.voice-chip-btn:active {
+  transform: scale(0.96);
+}
+.voice-chip-btn span {
+  font-size: 14px;
+  line-height: 1;
+}
+.voice-chip-btn.voice-chip-sos {
+  background: rgba(239, 68, 68, 0.24);
+  border-color: rgba(239, 68, 68, 0.48);
+  color: #fecaca;
+}
+.voice-chip-btn.voice-chip-sos:hover {
+  background: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.7);
+  color: #fff;
+}
+@media (max-width: 640px) {
+  .voice-quick-chips {
+    gap: 6px;
+    margin: 8px auto 10px;
+    padding: 0 8px;
+    max-width: 100%;
+  }
+  .voice-chip-btn {
+    font-size: 12px;
+    padding: 6px 11px;
+    border-radius: 18px;
+  }
+  .voice-chip-btn span {
+    font-size: 13px;
+  }
+}

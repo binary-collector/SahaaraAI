@@ -529,6 +529,14 @@ function renderVoiceMode() {
     '<button class="voice-btn-end" onclick="closeVoiceMode()" title="End conversation" aria-label="End voice conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
     '<button class="voice-btn-mute" onclick="toggleAutoListen()" aria-pressed="' + VoiceMode.autoListen + '" title="' + (VoiceMode.autoListen ? 'Disable auto-listen' : 'Enable auto-listen') + '">' + ic(VoiceMode.autoListen ? 'mic' : 'mic-off', 20) + '</button>' +
     '</div>' +
+    '<div class="voice-quick-chips" id="voice-quick-chips" aria-label="Quick voice actions">' +
+    '<button type="button" class="voice-chip-btn" onclick="executeVoiceAction(\'mark_dose\')" title="Mark dose completed"><span>💊</span> Mark Dose</button>' +
+    '<button type="button" class="voice-chip-btn" onclick="executeVoiceAction(\'whats_next\')" title="What is next?"><span>📋</span> What\'s Next</button>' +
+    '<button type="button" class="voice-chip-btn" onclick="executeVoiceAction(\'my_adherence\')" title="Check adherence"><span>📊</span> Adherence</button>' +
+    '<button type="button" class="voice-chip-btn" onclick="executeVoiceAction(\'start_breathing\')" title="Guided breathing"><span>🫁</span> Breathing</button>' +
+    '<button type="button" class="voice-chip-btn" onclick="executeVoiceAction(\'log_mood\')" title="Log mood"><span>🧘</span> Log Mood</button>' +
+    '<button type="button" class="voice-chip-btn voice-chip-sos" onclick="executeVoiceAction(\'emergency_sos\')" title="Emergency SOS"><span>🆘</span> SOS</button>' +
+    '</div>' +
     '<div class="voice-text-fallback"><input type="text" id="voice-text-input" class="voice-text-input" placeholder="' + (VoiceMode.srSupported ? 'Prefer typing? Ask Sahaara here…' : 'Voice input is unavailable — type your question here…') + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();sendVoiceTextInput()}">' +
     '<button class="voice-text-send" onclick="sendVoiceTextInput()" aria-label="Send typed message">' + ic('send', 16) + '</button></div>' +
     '<div class="voice-transcript-note">Saved as text on this device and in Sahaara chat history. CareTrack does not retain raw audio.</div>' +
@@ -579,8 +587,10 @@ function startVoiceListening(options) {
   if (!VoiceMode.recognition) {
     VoiceMode.recognition = new Recognition();
     VoiceMode.recognition.continuous = true; VoiceMode.recognition.interimResults = true; VoiceMode.recognition.maxAlternatives = 1;
+    VoiceMode.recognition.onstart = function() { VoiceMode.netRetries = 0; VoiceMode.isListening = true; };
     VoiceMode.recognition.onresult = function(event) {
       if (!VoiceMode.isOpen || VoiceMode.pending || VoiceMode.isSpeaking) return;
+      VoiceMode.netRetries = 0;
       let interim = ''; let finalText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]; const transcript = result && result[0] ? result[0].transcript : '';
@@ -616,7 +626,37 @@ function startVoiceListening(options) {
         VoiceMode.micDenied = true; VoiceMode.userStopped = true; voiceFeedback('micDenied', false); return;
       }
       if (error === 'audio-capture') { VoiceMode.micDenied = true; VoiceMode.userStopped = true; voiceFeedback('audioCapture', false); return; }
-      if (error === 'network') { VoiceMode.userStopped = true; voiceFeedback('network', false); return; }
+      if (error === 'network') {
+        console.warn('Sahaara Voice: speech recognition network glitch. Initiating smart recovery...');
+        VoiceMode.netRetries = (VoiceMode.netRetries || 0) + 1;
+        const currentLang = (VoiceMode.recognition && VoiceMode.recognition.lang) || '';
+        if (VoiceMode.netRetries <= 1 && currentLang !== 'en-US') {
+          if (VoiceMode.recognition) VoiceMode.recognition.lang = 'en-US';
+          VoiceMode.noticeText = 'Reconnecting with universal speech model...';
+          renderVoiceMode();
+          setTimeout(function() {
+            if (VoiceMode.isOpen && !VoiceMode.userStopped && !VoiceMode.isSpeaking) {
+              startVoiceListening({ automatic: true });
+            }
+          }, 600);
+          return;
+        }
+        if (VoiceMode.netRetries <= 2) {
+          VoiceMode.noticeText = 'Retrying speech connection...';
+          renderVoiceMode();
+          setTimeout(function() {
+            if (VoiceMode.isOpen && !VoiceMode.userStopped && !VoiceMode.isSpeaking) {
+              startVoiceListening({ automatic: true });
+            }
+          }, 1100);
+          return;
+        }
+        VoiceMode.isListening = false;
+        VoiceMode.noticeText = 'Speech server offline. Tap the voice chips or orb anytime to talk!';
+        renderVoiceMode();
+        if (VoiceMode.voice3dOrb) VoiceMode.voice3dOrb.setState('idle');
+        return;
+      }
       VoiceMode.userStopped = true; voiceFeedback('generic', false);
     };
     VoiceMode.recognition.onend = function() {
@@ -646,7 +686,7 @@ function startVoiceListening(options) {
       if (error && error.name === 'InvalidStateError' && attempt < 2) {
         VoiceMode.restartTimer = setTimeout(function() { VoiceMode.restartTimer = null; start(attempt + 1); }, 180);
       } else if (!(error && error.name === 'InvalidStateError')) {
-        VoiceMode.isListening = false; voiceFeedback('generic', false);
+        VoiceMode.isListening = false; console.warn('SpeechRecognition start error:', error);
       }
     }
   };
@@ -654,6 +694,7 @@ function startVoiceListening(options) {
   start(0);
 }
 function voiceOrbTap() {
+  VoiceMode.netRetries = 0;
   if (VoiceMode.isSpeaking || VoiceMode.isThinking || VoiceMode.pending) { startVoiceListening(); return; }
   if (VoiceMode.isListening) { stopVoiceListening(); return; }
   startVoiceListening();
@@ -684,6 +725,7 @@ function updateVoiceAnswerOnly() {
   else if (VoiceMode.replyMessage && VoiceMode.replyMessage.text) renderVoiceMode();
 }
 function sendVoiceTextInput() {
+  VoiceMode.netRetries = 0;
   const input = document.getElementById('voice-text-input');
   if (!input) return;
   const text = input.value.trim(); if (!text) return;
@@ -693,11 +735,31 @@ function sendVoiceTextInput() {
   VoiceMode.pending = false; VoiceMode.isThinking = false; VoiceMode.isListening = false;
   processVoiceInput(text);
 }
+function executeVoiceAction(actionType) {
+  VoiceMode.netRetries = 0;
+  if (VoiceMode.isSpeaking || VoiceMode.pending) {
+    cancelVoicePlayback('user-action', true);
+  }
+  let promptText = '';
+  if (actionType === 'mark_dose') promptText = 'I took my scheduled dose';
+  else if (actionType === 'whats_next') promptText = "What's my next activity?";
+  else if (actionType === 'my_adherence') promptText = 'How is my adherence?';
+  else if (actionType === 'start_breathing') promptText = 'Start breathing exercise';
+  else if (actionType === 'log_mood') promptText = 'I feel calm and relaxed today';
+  else if (actionType === 'emergency_sos') promptText = 'Call emergency contact';
+
+  if (promptText) {
+    VoiceMode.currentTranscript = promptText;
+    updateVoiceTranscriptOnly();
+    processVoiceInput(promptText);
+  }
+}
+window.executeVoiceAction = executeVoiceAction;
 function voiceLocalText(key, values) {
   const all = {
-    en: { confirm: 'I found {name} at {time}. Should I mark this self-care activity complete? Please say yes or no.', choose: 'I found more than one morning activity: {items}. Which one do you mean?', none: 'I do not see an unfinished morning activity scheduled today.', done: 'Okay, I marked {name} complete for today.', cancelled: 'Okay, I will not change your plan.', stop: 'Okay, I stopped. Tap the orb when you are ready to continue.', repeat: 'I will repeat my last answer.', slower: 'Sure. I will speak a little slower.', faster: 'Sure. I will speak a little faster.', language: 'Language changed to {name}.', nextNone: 'There are no upcoming activities left today.', noSpeech: 'I did not catch that. Please try speaking again.', micDenied: 'Microphone access is blocked. Please allow it in browser settings, or type below.', network: 'Voice recognition needs a network connection. You can type below.', audioCapture: 'I could not access a microphone. Please check the microphone, or type below.', unsupported: 'Voice recognition is not supported in this browser. You can type below.', generic: 'I could not start listening. Please try again or type below.', ack: 'Sure, let me check.' },
-    hi: { confirm: 'आज {time} पर {name} तय है। क्या मैं इस गतिविधि को पूरा हुआ चिह्नित करूँ? हाँ या नहीं कहें।', choose: 'आज सुबह एक से अधिक गतिविधियाँ हैं: {items}। आप किसकी बात कर रहे हैं?', none: 'आज सुबह के लिए कोई अधूरी गतिविधि तय नहीं दिख रही।', done: 'ठीक है, मैंने {name} को आज पूरा चिह्नित कर दिया।', cancelled: 'ठीक है, मैं आपकी योजना में कोई बदलाव नहीं करूँगा।', stop: 'ठीक है, मैंने रोक दिया। जारी रखने के लिए ऑर्ब पर टैप करें।', repeat: 'मैं अपना पिछला जवाब दोहराता हूँ।', slower: 'ज़रूर, मैं थोड़ा धीरे बोलूँगा।', faster: 'ज़रूर, मैं थोड़ा तेज़ बोलूँगा।', language: 'भाषा {name} पर बदल दी गई है।', nextNone: 'आज के लिए कोई आगामी गतिविधि बाकी नहीं है।', noSpeech: 'मैं आपकी बात नहीं सुन पाया। कृपया फिर से बोलें।', micDenied: 'माइक्रोफ़ोन की अनुमति बंद है। ब्राउज़र सेटिंग में अनुमति दें या नीचे लिखें।', network: 'आवाज़ पहचानने के लिए इंटरनेट चाहिए। आप नीचे लिख सकते हैं।', audioCapture: 'माइक्रोफ़ोन उपलब्ध नहीं है। जाँचें या नीचे लिखें।', unsupported: 'इस ब्राउज़र में आवाज़ पहचान उपलब्ध नहीं है। नीचे लिखें।', generic: 'सुनना शुरू नहीं हो पाया। फिर कोशिश करें या नीचे लिखें।', ack: 'ज़रूर, मैं देखता हूँ।' },
-    'hi-Latn': { confirm: 'Aaj {time} par {name} scheduled hai. Kya main is self-care activity ko complete mark kar doon? Haan ya nahi boliye.', choose: 'Aaj subah ek se zyada activities hain: {items}. Aap kiski baat kar rahe hain?', none: 'Aaj subah ke liye koi adhuri activity scheduled nahi dikh rahi.', done: 'Theek hai, maine {name} ko aaj complete mark kar diya.', cancelled: 'Theek hai, main aapke plan mein koi badlav nahi karunga.', stop: 'Theek hai, ruk gaya. Continue karne ke liye orb tap karein.', repeat: 'Main apna pichhla jawab dobara bolta hoon.', slower: 'Sure, ab main thoda dheere bolunga.', faster: 'Sure, ab main thoda tez bolunga.', language: 'Language {name} par change ho gayi hai.', nextNone: 'Aaj ke liye koi upcoming activity baaki nahi hai.', noSpeech: 'Main aapki baat samajh nahi paaya. Phir se boliye.', micDenied: 'Microphone permission band hai. Browser settings mein allow karein ya neeche type karein.', network: 'Voice recognition ke liye internet chahiye. Aap neeche type kar sakte hain.', audioCapture: 'Microphone access nahi mila. Check karein ya neeche type karein.', unsupported: 'Is browser mein voice recognition nahi hai. Neeche type karein.', generic: 'Listening shuru nahi ho paayi. Phir try karein ya type karein.', ack: 'Sure, main check karta hoon.' }
+    en: { confirm: 'I found {name} at {time}. Should I mark this self-care activity complete? Please say yes or no.', choose: 'I found more than one morning activity: {items}. Which one do you mean?', none: 'I do not see an unfinished morning activity scheduled today.', done: 'Okay, I marked {name} complete for today.', cancelled: 'Okay, I will not change your plan.', stop: 'Okay, I stopped. Tap the orb when you are ready to continue.', repeat: 'I will repeat my last answer.', slower: 'Sure. I will speak a little slower.', faster: 'Sure. I will speak a little faster.', language: 'Language changed to {name}.', nextNone: 'There are no upcoming activities left today.', noSpeech: 'I did not catch that. Please try speaking again.', micDenied: 'Microphone access is blocked. Please allow it in browser settings, or type below.', network: 'Voice connection is re-connecting. Tap the quick voice chips or the orb to speak.', audioCapture: 'I could not access a microphone. Please check the microphone, or type below.', unsupported: 'Voice recognition is not supported in this browser. You can type below.', generic: 'I could not start listening. Please try again or type below.', ack: 'Sure, let me check.' },
+    hi: { confirm: 'आज {time} पर {name} तय है। क्या मैं इस गतिविधि को पूरा हुआ चिह्नित करूँ? हाँ या नहीं कहें।', choose: 'आज सुबह एक से अधिक गतिविधियाँ हैं: {items}। आप किसकी बात कर रहे हैं?', none: 'आज सुबह के लिए कोई अधूरी गतिविधि तय नहीं दिख रही।', done: 'ठीक है, मैंने {name} को आज पूरा चिह्नित कर दिया।', cancelled: 'ठीक है, मैं आपकी योजना में कोई बदलाव नहीं करूँगा।', stop: 'ठीक है, मैंने रोक दिया। जारी रखने के लिए ऑर्ब पर टैप करें।', repeat: 'मैं अपना पिछला जवाब दोहराता हूँ।', slower: 'ज़रूर, मैं थोड़ा धीरे बोलूँगा।', faster: 'ज़रूर, मैं थोड़ा तेज़ बोलूँगा।', language: 'भाषा {name} पर बदल दी गई है।', nextNone: 'आज के लिए कोई आगामी गतिविधि बाकी नहीं है।', noSpeech: 'मैं आपकी बात नहीं सुन पाया। कृपया फिर से बोलें।', micDenied: 'माइक्रोफ़ोन की अनुमति बंद है। ब्राउज़र सेटिंग में अनुमति दें या नीचे लिखें।', network: 'आवाज़ पहचान पुनः कनेक्ट हो रही है। बोलने के लिए त्वरित चिप्स या ऑर्ब पर टैप करें।', audioCapture: 'माइक्रोफ़ोन उपलब्ध नहीं है। जाँचें या नीचे लिखें।', unsupported: 'इस ब्राउज़र में आवाज़ पहचान उपलब्ध नहीं है। नीचे लिखें।', generic: 'सुनना शुरू नहीं हो पाया। फिर कोशिश करें या नीचे लिखें।', ack: 'ज़रूर, मैं देखता हूँ।' },
+    'hi-Latn': { confirm: 'Aaj {time} par {name} scheduled hai. Kya main is self-care activity ko complete mark kar doon? Haan ya nahi boliye.', choose: 'Aaj subah ek se zyada activities hain: {items}. Aap kiski baat kar rahe hain?', none: 'Aaj subah ke liye koi adhuri activity scheduled nahi dikh rahi.', done: 'Theek hai, maine {name} ko aaj complete mark kar diya.', cancelled: 'Theek hai, main aapke plan mein koi badlav nahi karunga.', stop: 'Theek hai, ruk gaya. Continue karne ke liye orb tap karein.', repeat: 'Main apna pichhla jawab dobara bolta hoon.', slower: 'Sure, ab main thoda dheere bolunga.', faster: 'Sure, ab main thoda tez bolunga.', language: 'Language {name} par change ho gayi hai.', nextNone: 'Aaj ke liye koi upcoming activity baaki nahi hai.', noSpeech: 'Main aapki baat samajh nahi paaya. Phir se boliye.', micDenied: 'Microphone permission band hai. Browser settings mein allow karein ya neeche type karein.', network: 'Voice recognition reconnect ho rahi hai. Bolne ke liye voice chips ya orb tap karein.', audioCapture: 'Microphone access nahi mila. Check karein ya neeche type karein.', unsupported: 'Is browser mein voice recognition nahi hai. Neeche type karein.', generic: 'Listening shuru nahi ho paayi. Phir try karein ya type karein.', ack: 'Sure, main check karta hoon.' }
   };
   const table = all[AI.language] || all.en;
   let text = table[key] || all.en[key] || '';
@@ -749,6 +811,374 @@ function prepareVoiceCompletion(occ) {
   VoiceMode.pendingAction = { kind: 'confirmComplete', prescriptionId: occ.prescriptionId, date: occ.date, time: occ.time, name: occ.title };
   return voiceLocalText('confirm', { name: occ.title, time: formatTime12(occ.time) });
 }
+
+/**
+ * Sahaara Clinical Voice Engine — Fetch, Decode, Execute Architecture
+ */
+const SahaaraVoiceEngine = {
+  // 1. FETCH STAGE: Collect complete, live clinical & schedule state
+  fetch: function() {
+    const today = todayStr();
+    const currentMins = now().getHours() * 60 + now().getMinutes();
+    const allOccurrences = getAllOccurrencesForDate(today);
+    
+    const occurrences = allOccurrences.map(function(occ) {
+      const statusObj = getOccurrenceStatus(occ.prescriptionId, today, occ.time);
+      const rx = (State.prescriptions || []).find(function(r) { return r.id === occ.prescriptionId; }) || {};
+      return {
+        prescriptionId: occ.prescriptionId,
+        date: today,
+        time: occ.time,
+        title: occ.title || rx.title || 'Activity',
+        category: rx.category || occ.category || 'other',
+        dosage: rx.dosage || '',
+        instructions: rx.instructions || '',
+        minutes: timeToMinutes(occ.time),
+        status: statusObj.status
+      };
+    }).sort(function(a, b) { return a.minutes - b.minutes; });
+
+    const pending = occurrences.filter(function(o) { return o.status === 'due' || o.status === 'upcoming'; });
+    const completed = occurrences.filter(function(o) { return o.status === 'completed'; });
+    const missed = occurrences.filter(function(o) { return o.status === 'missed'; });
+
+    const adherence = calcDetailedAdherence(addDays(today, -6), today);
+    const activePrescriptions = (State.prescriptions || []).filter(function(rx) {
+      return rx && rx.active !== false && (!rx.deactivatedOn || rx.deactivatedOn > today) && (!rx.endDate || rx.endDate >= today);
+    });
+
+    const profile = State.profile || {};
+    const recentMood = (State.moodHistory || []).slice(-7);
+
+    return {
+      today: today,
+      currentMins: currentMins,
+      occurrences: occurrences,
+      pending: pending,
+      completed: completed,
+      missed: missed,
+      adherence: adherence,
+      activePrescriptions: activePrescriptions,
+      profile: profile,
+      recentMood: recentMood
+    };
+  },
+
+  // 2. DECODE STAGE: Natural language intent & parameter decoding
+  decode: function(text, data) {
+    const raw = String(text || '').trim();
+    const q = normalizeEmergencyText(raw).toLowerCase();
+    if (!q) return null;
+
+    // Intent A: Task / Dose Completion
+    const completeTriggers = /(complete|mark|took|take|taken|finished|done|kar do|kar dena|ho gaya|le li|liya|kha li|khaya|pee li|piya|poora|khatam|कर दिया|ले ली|खा ली|हो गया|पूरा)/i;
+    if (completeTriggers.test(q)) {
+      let target = null;
+      let matchedBy = 'generic';
+
+      // 1. Try matching prescription title directly
+      for (let i = 0; i < data.pending.length; i++) {
+        const item = data.pending[i];
+        const titleLower = item.title.toLowerCase();
+        const tokens = titleLower.split(/\s+/).filter(function(t) { return t.length > 2; });
+        const directMatch = q.indexOf(titleLower) >= 0 || tokens.some(function(token) { return q.indexOf(token) >= 0; });
+        if (directMatch) {
+          target = item;
+          matchedBy = 'title';
+          break;
+        }
+      }
+
+      // 2. Try category keywords
+      if (!target) {
+        if (/(pill|tablet|medicine|medication|dose|dawa|goli|दवा|गोली)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.category === 'medication'; });
+          matchedBy = 'category_medication';
+        } else if (/(breathing|breath|pranayama|saans|सांस|प्राणायाम)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.category === 'breathing'; });
+          matchedBy = 'category_breathing';
+        } else if (/(walk|walking|exercise|workout|vyayam|कसरत|व्यायाम)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.category === 'exercise'; });
+          matchedBy = 'category_exercise';
+        } else if (/(water|hydrate|hydration|paani|पानी)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.category === 'hydration'; });
+          matchedBy = 'category_hydration';
+        }
+      }
+
+      // 3. Try time-of-day keywords
+      if (!target) {
+        if (/(morning|subah|सुबह|प्रातः)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.minutes < 12 * 60; });
+          matchedBy = 'time_morning';
+        } else if (/(afternoon|dopahar|दोपहर)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.minutes >= 12 * 60 && o.minutes < 17 * 60; });
+          matchedBy = 'time_afternoon';
+        } else if (/(evening|shaam|शाम)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.minutes >= 17 * 60 && o.minutes < 21 * 60; });
+          matchedBy = 'time_evening';
+        } else if (/(night|bedtime|raat|रात)/i.test(q)) {
+          target = data.pending.find(function(o) { return o.minutes >= 21 * 60; });
+          matchedBy = 'time_night';
+        }
+      }
+
+      // 4. Fallback to closest due or earliest pending item
+      if (!target && data.pending.length > 0) {
+        target = data.pending[0];
+        matchedBy = 'first_pending';
+      }
+
+      return {
+        intent: 'COMPLETE',
+        target: target,
+        matchedBy: matchedBy,
+        hasPending: data.pending.length > 0
+      };
+    }
+
+    // Intent B: Schedule & Next Task Query
+    if (/(what.*next|whats next|agla kya|aage kya|next activity|next task|next medicine|next dose|what do i have next|next item|अगला क्या|आगे क्या)/i.test(q)) {
+      return { intent: 'SCHEDULE_NEXT' };
+    }
+    if (/(what.*left|anything pending|kya baaki hai|remaining tasks|tasks left|activities left|how many left|क्या बाकी है)/i.test(q)) {
+      return { intent: 'SCHEDULE_LEFT' };
+    }
+    if (/(plan today|today.*schedule|aaj ka plan|aaj ka routine|what do i have today|what are my activities today|my schedule|आज का प्लान|आज का शेड्यूल)/i.test(q)) {
+      return { intent: 'SCHEDULE_TODAY' };
+    }
+
+    // Intent C: Adherence & Progress Query
+    if (/(adherence|streak|my progress|how am i doing|am i on track|completion rate|score|kaisa chal raha|meri progress|mera adherence|प्रगति|अनुपालन)/i.test(q)) {
+      return { intent: 'ADHERENCE' };
+    }
+
+    // Intent D: Prescriptions & Care Plan Query
+    if (/(what.*prescriptions|list.*medicines|my medicines|what medications|active medications|active prescriptions|meri dawaiyan|dawa ki list|care plan|दवाइयां|मेरी दवा)/i.test(q)) {
+      return { intent: 'PRESCRIPTIONS' };
+    }
+
+    // Intent E: Guided Breathing Exercise
+    if (/(start.*breathing|guide.*breathing|box breathing|deep breathing|pranayama|saans.*exercise|calm down|help me relax|सांस की कसरत|प्राणायाम)/i.test(q)) {
+      return { intent: 'BREATHING' };
+    }
+
+    // Intent F: Emergency SOS & Contact
+    if (/(call emergency|emergency contact|sos|urgent help|call doctor|doctor ko phone|emergency call|आपातकालीन|मदद)/i.test(q)) {
+      return { intent: 'EMERGENCY_SOS' };
+    }
+
+    // Intent G: Mood Logging & Check-In
+    if (/(log.*mood|i feel|feeling|mera mood|mood check|mood log|i am feeling|mood kaisa|कैसा लग रहा)/i.test(q)) {
+      if (/(how.*mood|mood history|mood trend|mood kaisa)/i.test(q)) {
+        return { intent: 'MOOD_QUERY' };
+      }
+      let score = 3;
+      let label = 'okay';
+      if (/(happy|great|excellent|energized|wonderful|awesome|khush|mast|शानदार|खुश|बढ़िया)/i.test(q)) { score = 5; label = 'energized & happy'; }
+      else if (/(calm|peaceful|relaxed|good|theek|accha|शांत|अच्छा|ठीक)/i.test(q)) { score = 4; label = 'calm & relaxed'; }
+      else if (/(tired|exhausted|sleepy|thakan|थकान|कमज़ोर)/i.test(q)) { score = 2; label = 'tired'; }
+      else if (/(anxious|stressed|nervous|worried|tension|ghabrahat|तनाव|चिंता|घबराहट)/i.test(q)) { score = 2; label = 'anxious & stressed'; }
+      else if (/(sad|depressed|lonely|hopeless|down|udaas|उदास|दुखी)/i.test(q)) { score = 1; label = 'low & sad'; }
+      return { intent: 'MOOD_LOG', score: score, label: label, note: raw };
+    }
+
+    return null;
+  },
+
+  // 3. EXECUTE STAGE: Execute state mutations and generate spoken feedback
+  execute: function(decoded, data) {
+    if (!decoded) return null;
+    const lang = AI.language || 'en';
+
+    // Execution A: Complete Occurrence
+    if (decoded.intent === 'COMPLETE') {
+      if (!decoded.hasPending) {
+        if (lang === 'hi') return 'आज के लिए कोई अधूरी गतिविधि तय नहीं दिख रही। आपकी सभी निर्धारित गतिविधियाँ पूरी हो चुकी हैं!';
+        if (lang === 'hi-Latn') return 'Aaj ke liye koi pending activity nahi hai. Aapne aaj ke sabhi tasks complete kar liye hain!';
+        return 'All scheduled activities for today are already completed! Fantastic dedication to your health plan.';
+      }
+      const target = decoded.target;
+      if (!target) {
+        if (lang === 'hi') return 'आज पूरा करने के लिए कोई उपयुक्त गतिविधि नहीं मिली।';
+        if (lang === 'hi-Latn') return 'Aaj complete karne ke liye koi matching activity nahi mili.';
+        return 'I could not find an unfinished activity matching that name today.';
+      }
+
+      // Execute state change
+      completeOccurrence(target.prescriptionId, data.today, target.time);
+      
+      // Compute updated adherence
+      const newAdh = calcDetailedAdherence(addDays(data.today, -6), data.today);
+      const newPct = newAdh.pct != null ? newAdh.pct + '%' : '100%';
+      const streak = newAdh.streak || 1;
+
+      // Pulse 3D orb
+      if (VoiceMode.voice3dOrb && VoiceMode.voice3dOrb.triggerRipple) {
+        VoiceMode.voice3dOrb.triggerRipple(0, 0);
+      }
+
+      if (lang === 'hi') {
+        return 'बहुत बढ़िया! मैंने ' + formatTime12(target.time) + ' पर ' + target.title + ' को पूरा चिह्नित कर दिया है। आपकी 7-दिवसीय अनुपालन दर ' + newPct + ' है और ' + streak + ' दिन का स्ट्रीक जारी है!';
+      }
+      if (lang === 'hi-Latn') {
+        return 'Shabash! Maine ' + formatTime12(target.time) + ' par ' + target.title + ' ko complete mark kar diya hai. Aapka adherence ab ' + newPct + ' hai with a ' + streak + '-day streak!';
+      }
+      return 'Done! I have marked ' + target.title + ' at ' + formatTime12(target.time) + ' as completed. Your 7-day adherence is now ' + newPct + ' with a ' + streak + '-day streak. Keep it up!';
+    }
+
+    // Execution B: Schedule Next
+    if (decoded.intent === 'SCHEDULE_NEXT') {
+      if (!data.pending.length) {
+        if (lang === 'hi') return 'आज के लिए कोई आगामी गतिविधि बाकी नहीं है। आपने आज के सभी काम पूरे कर लिए हैं!';
+        if (lang === 'hi-Latn') return 'Aaj ke liye koi upcoming activity baaki nahi hai. Aapke sabhi tasks poore ho chuke hain!';
+        return 'There are no upcoming activities left today. All your scheduled tasks are complete!';
+      }
+      const next = data.pending[0];
+      const count = data.pending.length;
+      if (lang === 'hi') {
+        return 'आपकी अगली गतिविधि ' + formatTime12(next.time) + ' पर ' + next.title + ' है। आज आपके कुल ' + count + ' कार्य बाकी हैं।';
+      }
+      if (lang === 'hi-Latn') {
+        return 'Aapka agla task ' + next.title + ' hai at ' + formatTime12(next.time) + '. Aaj ' + count + ' activities baaki hain.';
+      }
+      return 'Your next scheduled activity is ' + next.title + ' at ' + formatTime12(next.time) + ' (' + getCategoryInfo(next.category).label + '). You have ' + count + (count === 1 ? ' task' : ' tasks') + ' left today.';
+    }
+
+    // Execution C: Schedule Left
+    if (decoded.intent === 'SCHEDULE_LEFT') {
+      if (!data.pending.length) {
+        if (lang === 'hi') return 'आज कोई भी गतिविधि लंबित नहीं है। बहुत खूब!';
+        if (lang === 'hi-Latn') return 'Aaj koi pending activity nahi hai. Great job!';
+        return 'You have no pending activities left today. Great job staying on top of your plan!';
+      }
+      const items = data.pending.slice(0, 4).map(function(o) { return o.title + ' at ' + formatTime12(o.time); }).join(', ');
+      if (lang === 'hi') return 'आज ' + data.pending.length + ' गतिविधियाँ बाकी हैं: ' + items + '।';
+      if (lang === 'hi-Latn') return 'Aaj ' + data.pending.length + ' activities baaki hain: ' + items + '.';
+      return 'You have ' + data.pending.length + ' activities left today: ' + items + '.';
+    }
+
+    // Execution D: Schedule Full Day
+    if (decoded.intent === 'SCHEDULE_TODAY') {
+      if (!data.occurrences.length) {
+        if (lang === 'hi') return 'आज की योजना में कोई गतिविधि निर्धारित नहीं है।';
+        return 'You have no activities scheduled for today in your care plan.';
+      }
+      const total = data.occurrences.length;
+      const done = data.completed.length;
+      const next = data.pending[0];
+      if (lang === 'hi') {
+        return 'आज आपकी योजना में कुल ' + total + ' गतिविधियाँ हैं, जिनमें से ' + done + ' पूरी हो चुकी हैं।' + (next ? ' अगली गतिविधि ' + formatTime12(next.time) + ' पर ' + next.title + ' है।' : '');
+      }
+      if (lang === 'hi-Latn') {
+        return 'Aaj aapke plan mein ' + total + ' activities hain, jinme se ' + done + ' complete ho chuki hain.' + (next ? ' Next task ' + next.title + ' at ' + formatTime12(next.time) + ' hai.' : '');
+      }
+      return 'Today your care plan has ' + total + ' scheduled activities, with ' + done + ' completed so far.' + (next ? ' Next is ' + next.title + ' at ' + formatTime12(next.time) + '.' : '');
+    }
+
+    // Execution E: Adherence
+    if (decoded.intent === 'ADHERENCE') {
+      const adh = data.adherence;
+      const pct = adh.pct != null ? adh.pct : 100;
+      const streak = adh.streak || 0;
+      const completed = adh.completed || 0;
+      const scheduled = adh.scheduled || 0;
+      if (lang === 'hi') {
+        return 'आपकी 7-दिवसीय अनुपालन दर ' + pct + '% है, और आपका सक्रिय स्ट्रीक ' + streak + ' दिन है। आपने इस सप्ताह ' + scheduled + ' में से ' + completed + ' गतिविधियाँ पूरी की हैं। बहुत खूब!';
+      }
+      if (lang === 'hi-Latn') {
+        return 'Aapka 7-day adherence ' + pct + '% hai with a ' + streak + '-day active streak! Is hafte aapne ' + scheduled + ' mein se ' + completed + ' activities poori ki hain. Keep it up!';
+      }
+      return 'Your 7-day adherence is ' + pct + '%, with an active streak of ' + streak + ' days. You have completed ' + completed + ' out of ' + scheduled + ' activities this week. ' + (pct >= 85 ? 'You are doing fantastic!' : 'You are making steady progress!');
+    }
+
+    // Execution F: Active Prescriptions
+    if (decoded.intent === 'PRESCRIPTIONS') {
+      if (!data.activePrescriptions.length) {
+        return 'You do not have any active self-care prescriptions listed right now.';
+      }
+      const list = data.activePrescriptions.slice(0, 6).map(function(rx) { return rx.title + ' (' + getCategoryInfo(rx.category).label + ')'; }).join('; ');
+      if (lang === 'hi') return 'आपकी सक्रिय योजना में ये दवाइयां और गतिविधियाँ हैं: ' + list + '।';
+      if (lang === 'hi-Latn') return 'Aapki active care plan mein ye items hain: ' + list + '.';
+      return 'Your active care plan includes ' + data.activePrescriptions.length + ' items: ' + list + '.';
+    }
+
+    // Execution G: Guided Breathing
+    if (decoded.intent === 'BREATHING') {
+      if (VoiceMode.voice3dOrb && VoiceMode.voice3dOrb.pulseFromSpeech) VoiceMode.voice3dOrb.pulseFromSpeech(0.85);
+      if (lang === 'hi') {
+        return 'आइए साथ में 4-4-4 गहरी सांस की कसरत करते हैं। धीरे-धीरे सांस अंदर लें... 1, 2, 3, 4। सांस रोकें... 1, 2, 3, 4। अब धीरे-धीरे सांस छोड़ें... 1, 2, 3, 4। शांत महसूस करें। बहुत बढ़िया।';
+      }
+      if (lang === 'hi-Latn') {
+        return 'Chaliye saath mein 4-4-4 deep breathing karte hain. Dheere se saans andar lijiye... 1, 2, 3, 4. Hold kijiye... 1, 2, 3, 4. Ab dheere se bahar chhodiye... 1, 2, 3, 4. Relax feel karein. Shabash.';
+      }
+      return "Let's take a calming 4-4-4 box breath together. Breathe in gently through your nose... 1, 2, 3, 4. Hold your breath... 1, 2, 3, 4. Now slowly exhale through your mouth... 1, 2, 3, 4. Hold gently... 1, 2, 3, 4. Feel your body relax. Great job.";
+    }
+
+    // Execution H: Emergency SOS
+    if (decoded.intent === 'EMERGENCY_SOS') {
+      const contact = data.profile && data.profile.emergencyContact ? data.profile.emergencyContact : { name: 'Emergency Services', phone: '112' };
+      const cName = contact.name || 'Emergency Services';
+      const cPhone = contact.phone || '112';
+      if (VoiceMode.isOpen) {
+        VoiceMode.emergencyActive = true;
+        VoiceMode.emergencyCard = { title: 'Emergency SOS', message: 'Calling emergency contact: ' + cName, support: 'Phone: ' + cPhone, callLabel: 'Call ' + cPhone };
+        renderVoiceMode();
+      }
+      if (lang === 'hi') {
+        return 'आपातकालीन प्रोटोकॉल सक्रिय। आपके आपातकालीन संपर्क ' + cName + ' हैं (' + cPhone + ')। यदि स्थिति गंभीर है, तो कृपया तुरंत 112 पर कॉल करें।';
+      }
+      if (lang === 'hi-Latn') {
+        return 'Emergency protocol active ho gaya hai. Aapke emergency contact ' + cName + ' hain (' + cPhone + '). Kisi bhi emergency mein turant 112 par call karein.';
+      }
+      return 'Emergency protocol activated. Your emergency contact is ' + cName + ' at ' + cPhone + '. If you are experiencing a life-threatening medical emergency, call 112 immediately.';
+    }
+
+    // Execution I: Mood Logging & Query
+    if (decoded.intent === 'MOOD_LOG') {
+      State.moodHistory = State.moodHistory || [];
+      State.moodHistory.push({
+        id: uid(),
+        date: data.today,
+        score: decoded.score,
+        tags: ['voice-checkin'],
+        note: decoded.note || 'Logged via Sahaara Voice',
+        loggedAt: new Date().toISOString()
+      });
+      saveState();
+      render();
+
+      if (lang === 'hi') {
+        return 'मैंने आपकी मनोदशा ' + decoded.label + ' दर्ज कर ली है। अपने साथ जुड़ने के लिए धन्यवाद। एक गहरी सांस लें, सहारा आपके साथ है।';
+      }
+      if (lang === 'hi-Latn') {
+        return 'Maine aapka mood check-in ' + decoded.label + ' save kar liya hai. Ek gehri saans lijiye, Sahaara aapke saath hai.';
+      }
+      return "I have logged your mood check-in as " + decoded.label + ". Thank you for checking in with yourself. Take a gentle breath; Sahaara is right here with you.";
+    }
+
+    if (decoded.intent === 'MOOD_QUERY') {
+      const history = data.recentMood;
+      if (!history.length) {
+        return 'You do not have any recent mood check-ins logged yet.';
+      }
+      const avg = (history.reduce(function(sum, m) { return sum + (m.score || 3); }, 0) / history.length).toFixed(1);
+      return 'Over your last ' + history.length + ' check-ins, your average mood score is ' + avg + ' out of 5. Keeping a steady log helps track your overall wellness.';
+    }
+
+    return null;
+  },
+
+  // Main pipeline: Fetch -> Decode -> Execute
+  process: function(text) {
+    const data = this.fetch();
+    const decoded = this.decode(text, data);
+    if (!decoded) return null;
+    return this.execute(decoded, data);
+  }
+};
+window.SahaaraVoiceEngine = SahaaraVoiceEngine;
+
 function runVoiceLocalCommand(text) {
   const q = normalizeEmergencyText(text);
   if (!q) return null;
@@ -791,23 +1221,22 @@ function runVoiceLocalCommand(text) {
     VoiceMode.speechRate = Math.min(1.16, (VoiceMode.speechRate || 0.94) + 0.12);
     return voiceLocalText('faster');
   }
-  const markRequested = /(mark|complete|done|kar do|kar dena|पूरा|पूर्ण|कर दो|कर देना|करें)/i.test(q) && /(morning|subah|सुबह|प्रातः)/i.test(q) && /(dose|activity|task|prescription|goli|dawa|दवा|गोली|गतिविधि|काम)/i.test(q);
-  if (markRequested) {
-    const candidates = getMorningOccurrences();
-    if (!candidates.length) return voiceLocalText('none');
-    if (candidates.length === 1) return prepareVoiceCompletion(candidates[0]);
-    VoiceMode.pendingAction = { kind: 'chooseOccurrence', options: candidates };
-    const items = candidates.slice(0, 4).map(function(occ, index) { return (index + 1) + ', ' + occ.title + ' at ' + formatTime12(occ.time); }).join('; ');
-    return voiceLocalText('choose', { items: items });
+  // Execute via Sahaara Clinical Voice Engine (Fetch - Decode - Execute)
+  try {
+    const executed = SahaaraVoiceEngine.process(text);
+    if (executed) return executed;
+  } catch (err) {
+    console.warn('SahaaraVoiceEngine execution error:', err);
   }
-  if (/(what.s next|what is next|next today|upcoming|aage kya|aage kaun|आगे क्या|अगला क्या|आज आगे)/i.test(q)) {
-    const today = todayStr(); const minute = now().getHours() * 60 + now().getMinutes();
-    const next = getAllOccurrencesForDate(today).filter(function(occ) {
-      const status = getOccurrenceStatus(occ.prescriptionId, today, occ.time).status;
-      return status === 'due' || (status === 'upcoming' && timeToMinutes(occ.time) >= minute);
-    }).sort(function(a, b) { return timeToMinutes(a.time) - timeToMinutes(b.time); })[0];
-    return next ? 'Your next scheduled activity is ' + next.title + ' at ' + formatTime12(next.time) + '.' : voiceLocalText('nextNone');
+
+  // Fallback to high-performance local clinical intelligence
+  try {
+    const clinical = sahaaraRoute(text, { voiceMode: true }, VoiceMode.context);
+    if (clinical) return cleanSpeechText(clinical);
+  } catch (err) {
+    console.warn('sahaaraRoute voice error:', err);
   }
+
   return null;
 }
 function playStandaloneVoiceText(text, autoResume) {

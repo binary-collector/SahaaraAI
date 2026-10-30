@@ -50,6 +50,50 @@ A fully configured dummy testing account is built directly into the system to de
 
 ---
 
+## 🎙️ Resilient Voice AI & Fetch-Decode-Execute Clinical Engine
+
+Sahaara AI incorporates an intelligent, offline-resilient conversational Voice Mode designed to overcome browser Web Speech API limitations (such as Chromium's cloud-speech network drops) with a complete clinical data engine:
+
+### 1. 🛡️ Voice Recognition Network Resilience
+- **Smart Model & Language Fallback**: When Chromium/browser speech recognition throws `event.error === 'network'` due to Google speech-server timeouts or firewall blocks on regional language tags (e.g. `en-IN`, `hi-Latn`), Sahaara does not terminate the session. It automatically retries with the universal `en-US` model and applies exponential backoff.
+- **Zero-Lockout Architecture**: If browser cloud speech is completely blocked or offline, Sahaara keeps the 3D Orb and conversation active, smoothly transitioning to the interactive Voice Bar and local speech synthesis rather than blocking the user.
+- **Offline Browser Speech Synthesis (TTS)**: Spoken voice responses utilize the browser's built-in `window.speechSynthesis` engine, which operates locally and completely offline without requiring cloud API connections.
+
+### 2. ⚡ The Fetch - Decode - Execute Clinical Pipeline
+When users speak or tap a command, the internal `SahaaraVoiceEngine` executes a 3-stage clinical pipeline:
+- **STAGE 1 — FETCH**: Queries live reactive `State`:
+  - Today's date and minute-by-minute scheduled occurrences (`getAllOccurrencesForDate()`).
+  - Active self-care prescriptions with dosages and frequencies.
+  - Real-time 7-day adherence metrics and active streak days (`calcDetailedAdherence()`).
+  - Patient clinical profile, conditions, and saved Emergency SOS contact.
+  - Recent 7-day mood check-in records (`State.moodHistory`).
+- **STAGE 2 — DECODE**: Multilingual natural language intent parser recognizing:
+  - **Task Completion** (*"I took my Metformin"*, *"Mark morning breathing done"*, *"Completed 20 minute walk"*, *"Maine subah ki dawai le li"*).
+  - **Schedule & Next Queries** (*"What's my next activity?"*, *"What's on my plan today?"*, *"What tasks are left?"*, *"Agla task kya hai?"*).
+  - **Adherence Reports** (*"How is my adherence?"*, *"What is my streak?"*, *"Am I on track?"*).
+  - **Prescriptions List** (*"What medications am I taking?"*, *"Show my active care plan"*).
+  - **Guided Breathing** (*"Start breathing exercise"*, *"Guide my breathing"*, *"Pranayama shuru karo"*).
+  - **Mood Check-In** (*"Log my mood as calm"*, *"I feel great today"*, *"Feeling anxious"*).
+  - **Emergency SOS** (*"Call emergency contact"*, *"Emergency SOS"*, *"Call doctor"*).
+  - **Clinical Consultation** (*"Can I eat sweets?"*, *"Tips for better sleep"*, *"I feel dizzy"*).
+- **STAGE 3 — EXECUTE**:
+  - Automatically executes `completeOccurrence()` or mood recording on `State`.
+  - Persists changes immediately via `saveState()`.
+  - Triggers live reactive UI dashboard update via `render()`.
+  - Animates the Three.js 3D WebGL Orb into `speaking` state with synchronized ripple pulses.
+  - Speaks natural, compassionate audio feedback via speech synthesis.
+
+### 3. 🔘 One-Touch Quick Voice Action Bar
+Prominently integrated within the 3D WebGL Orb screen:
+- 💊 **Mark Dose**: Instantly completes the active due medication or activity.
+- 📋 **What's Next**: Fetches and speaks upcoming activities and remaining counts.
+- 📊 **Adherence**: Reports live 7-day adherence percentage and streak.
+- 🫁 **Breathing**: Guides the user through a rhythmic 4-4-4 box breathing sequence.
+- 🧘 **Log Mood**: Logs a wellness check-in and responds with compassionate advice.
+- 🆘 **SOS**: Activates the Emergency SOS protocol and 1-tap contact dialer.
+
+---
+
 ## 📱 Responsive Optimizations (Desktop, Tablet & Android)
 
 The application features a tailored **3-tier responsive architecture** optimized for desktop monitors, iPads / Android tablets, and Android smartphones:
