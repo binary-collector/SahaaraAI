@@ -1,12 +1,16 @@
 # 🩺 Sahaara AI — Modular Health & Wellbeing Architecture
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-binary--collector.github.io%2FSahaaraAI-0d9488?style=for-the-badge&logo=githubpages&logoColor=white)](https://binary-collector.github.io/SahaaraAI/)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
-[![Platform: Web](https://img.shields.io/badge/Platform-Web%20%7C%20PWA%20Ready-blue.svg)](index.html)
+[![Platform: Web](https://img.shields.io/badge/Platform-Web%20%7C%20PWA%20Ready-blue.svg)](https://binary-collector.github.io/SahaaraAI/)
 [![WebGL](https://img.shields.io/badge/WebGL-Three.js%203D%20Orb-9cf.svg)](https://threejs.org/)
 [![Speech](https://img.shields.io/badge/Speech-Web%20Speech%20API-purple.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
-[![Responsive](https://img.shields.io/badge/Responsive-Desktop%20%7C%20Tablet%20%7C%20Android-green.svg)](README.md)
+[![Responsive](https://img.shields.io/badge/Responsive-Desktop%20%7C%20Tablet%20%7C%20Android-green.svg)](https://binary-collector.github.io/SahaaraAI/)
 
 > **Sahaara AI** is an advanced personal health, mental wellbeing, and prescription tracking ecosystem featuring conversational AI assistance, a real-time WebGL 3D Voice Orb, offline-first synchronization, and rapid Emergency SOS services.
+
+🌐 **Live Website**: [https://binary-collector.github.io/SahaaraAI/](https://binary-collector.github.io/SahaaraAI/)
 
 ---
 
