@@ -263,6 +263,17 @@
   box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
 }
 
+.btn-demo-doctor {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  color: #166534;
+  border-color: #86efac;
+}
+
+.btn-demo-doctor:hover {
+  background: #bbf7d0;
+  border-color: #22c55e;
+}
+
 .btn-demo-quick:active {
   transform: translateY(0);
 }

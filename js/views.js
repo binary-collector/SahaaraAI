@@ -651,13 +651,13 @@ function renderProfile() {
         <div>
           <div style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px">
             ${esc(Auth.currentUser.name)}
-            <span class="chip ok" style="font-size:11px;padding:1px 6px">${Auth.isPatientPrototypeAccount() ? "Patient Prototype" : (Auth.isPrototypeAccount() ? "Prototype Showcase" : "Active Session")}</span>
+            <span class="chip ok" style="font-size:11px;padding:1px 6px">${Auth.isDoctorPrototypeAccount() ? "Doctor Prototype" : (Auth.isPatientPrototypeAccount() ? "Patient Prototype" : (Auth.isPrototypeAccount() ? "Prototype Showcase" : "Active Session"))}</span>
           </div>
           <div class="muted" style="font-size:13px">${esc(Auth.currentUser.email)}</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${Auth.isPrototypeAccount() ? '<button type="button" class="btn btn-o btn-sm" onclick="Auth.loadPrototypeShowcaseData(); toast(\'Prototype data reset successfully!\'); render();" title="Reset all prototype mock data">↻ Reset ' + (Auth.isPatientPrototypeAccount() ? 'Patient Prototype Data' : 'Prototype Data') + '</button>' : ''}
+        ${Auth.isPrototypeAccount() ? '<button type="button" class="btn btn-o btn-sm" onclick="Auth.loadPrototypeShowcaseData(Auth.isDoctorPrototypeAccount() ? \'doctor\' : \'patient\'); toast(\'Prototype data reset successfully!\'); render();" title="Reset all prototype mock data">↻ Reset ' + (Auth.isDoctorPrototypeAccount() ? 'Doctor Prototype Data' : (Auth.isPatientPrototypeAccount() ? 'Patient Prototype Data' : 'Prototype Data')) + '</button>' : ''}
         <button type="button" class="btn btn-o btn-sm" onclick="Auth.logout()">Sign Out / Switch Account</button>
       </div>
     </div>

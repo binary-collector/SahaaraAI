@@ -110,6 +110,13 @@ const Auth = {
            em === 'ananya.sharma@sahaara.ai';
   },
 
+  isDoctorPrototypeAccount() {
+    if (!this.currentUser || !this.currentUser.email) return false;
+    const em = this.currentUser.email.toLowerCase();
+    return em === 'demo.prototype@sahaara.ai' ||
+           em === 'sarah.mitchell@sahaara.ai';
+  },
+
   login(email, password, isDemo) {
     const cleanEmail = (email || '').trim().toLowerCase();
     const users = this.getUsers();
@@ -832,19 +839,29 @@ const Auth = {
 
         ${isSignIn ? this.renderSignInHtml() : this.renderRegisterHtml()}
 
-        <div class="auth-divider">PATIENT PROTOTYPE SHOWCASE</div>
+        <div class="auth-divider">PROTOTYPE SHOWCASE ACCOUNTS</div>
 
         <div class="prototype-card">
-          <button type="button" class="btn-demo-quick" onclick="Auth.quickPatientLogin()">
-            ⚡ Explore Patient Prototype Account (1-Click)
-          </button>
+          <div class="prototype-actions-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button type="button" class="btn-demo-quick" onclick="Auth.quickPatientLogin()" title="1-Click Login as Patient Ananya Sharma">
+              👤 Patient (1-Click)
+            </button>
+            <button type="button" class="btn-demo-quick btn-demo-doctor" onclick="Auth.quickDemoLogin('doctor')" title="1-Click Login as Dr. Sarah Mitchell">
+              🩺 Doctor (1-Click)
+            </button>
+          </div>
           <p class="prototype-card-desc">
-            Preloaded for patient <strong>Ananya Sharma</strong> (Type 2 Diabetes) with 7-day adherence charts, prescriptions, mood trends, personal journal & AI sessions.
+            Explore either persona: Patient (<strong>Ananya Sharma</strong>) or Clinician (<strong>Dr. Sarah Mitchell</strong>) pre-seeded with 7-day adherence charts, prescriptions, and AI sessions.
           </p>
-          <div class="prototype-credentials-badge">
-            <span class="cred-pill" onclick="Auth.fillCredentials('patient.prototype@sahaara.ai', 'password123')" title="Click to autofill into sign-in form">
-              👤 <strong>Patient:</strong> <code>patient.prototype@sahaara.ai</code> · <code>password123</code>
-            </span>
+          <div class="prototype-credentials-badge" style="display:flex;flex-direction:column;gap:6px;align-items:stretch">
+            <div class="cred-pill" onclick="Auth.fillCredentials('patient.prototype@sahaara.ai', 'password123')" title="Click to fill patient credentials into form" style="display:flex;justify-content:space-between;align-items:center">
+              <span>👤 <strong>Patient:</strong> <code>patient.prototype@sahaara.ai</code></span>
+              <code>password123</code>
+            </div>
+            <div class="cred-pill" onclick="Auth.fillCredentials('demo.prototype@sahaara.ai', 'password123')" title="Click to fill doctor credentials into form" style="display:flex;justify-content:space-between;align-items:center">
+              <span>🩺 <strong>Doctor:</strong> <code>demo.prototype@sahaara.ai</code></span>
+              <code>password123</code>
+            </div>
           </div>
         </div>
       </div>

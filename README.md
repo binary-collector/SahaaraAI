@@ -14,18 +14,20 @@
 
 ---
 
-## ⚡ Patient Prototype Account (Full-Feature Showcase)
+## ⚡ Dual Prototype Showcase Accounts (Patient & Doctor)
 
-A fully configured dummy patient testing account is built directly into the system to demonstrate **every feature** of Sahaara AI immediately without requiring manual setup:
+Fully configured dummy testing accounts are built directly into the system to demonstrate **every feature** of Sahaara AI immediately for both patient self-care and clinician monitoring:
 
 ### Quick Access Options:
-- **1-Click Prototype Access**: Click the **`⚡ Explore Patient Prototype Account (1-Click)`** button on the Sign-In screen.
+- **1-Click Prototype Access**: Click either **`👤 Patient (1-Click)`** or **`🩺 Doctor (1-Click)`** on the Sign-In screen.
 - **Manual Credentials**:
-  - **Email**: `patient.prototype@sahaara.ai` (or `patient@sahaara.ai` / `demo.prototype@sahaara.ai`)
-  - **Password**: `password123`
+  - **👤 Patient Account**: `patient.prototype@sahaara.ai` (or `patient@sahaara.ai`) · `password123`
+  - **🩺 Doctor Account**: `demo.prototype@sahaara.ai` (or `sarah.mitchell@sahaara.ai`) · `password123`
 
-### What This Patient Prototype Demonstrates:
-1. **Patient Profile**: Complete patient identity (`Ananya Sharma`, Age 42, Patient ID `PAT-84920`, Condition: `Type 2 diabetes`, Clinician: `Dr. Rajesh Patel, MD`, Emergency Contact: `Vikram Sharma (Spouse)` at `+91 98765 43210`).
+### What These Prototypes Demonstrate:
+1. **Clinical Personas**:
+   - **Patient Persona**: `Ananya Sharma`, Age 42, Patient ID `PAT-84920`, Condition: `Type 2 diabetes`, Clinician: `Dr. Rajesh Patel, MD`, Emergency Contact: `Vikram Sharma (Spouse)` at `+91 98765 43210`.
+   - **Doctor Persona**: `Dr. Sarah Mitchell`, Age 34, Patient ID `CT-84920`, Cardiometabolic Specialist, Emergency Contact: `David Mitchell` at `+1 (555) 019-2834`.
 2. **7 Multi-Category Prescriptions**:
    - 🌬️ **Breathing**: Morning Diaphragmatic Box Breathing (Pranayama) (`07:30`)
    - 🍏 **Diet**: Balanced Breakfast & Fasting Blood Sugar Log (`08:00`)
@@ -37,16 +39,16 @@ A fully configured dummy patient testing account is built directly into the syst
 3. **Today's Plan Schedule**: Morning tasks marked completed with realistic timestamps; afternoon/evening tasks scheduled in pending states with dynamic progress bars.
 4. **7-Day Adherence Records**: 6 days of historical logs generating a **93% Adherence Rate** that dynamically powers the adherence mini-bar charts and Reports screen.
 5. **Wellbeing Suite**:
-   - **Interactive Mood Chart**: 7 consecutive daily mood logs plotting the SVG mood line chart with ratings, emotion tags, sleep hours, stress ratings, and patient notes.
+   - **Interactive Mood Chart**: 7 consecutive daily mood logs plotting the SVG mood line chart with ratings, emotion tags, sleep hours, stress ratings, and notes.
    - **Daily Reflections**: 3 recorded reflection assessments with wellbeing scores.
-   - **Personal Health Journal**: 3 authentic patient self-care reflection entries on living with Type 2 diabetes, scheduled hydration benefits, and using Sahaara AI.
+   - **Personal Health Journal**: 3 persona-specific reflection entries (patient diabetes journey vs clinician work-life self-care balance).
    - **Wellbeing Toolkit**: Breathing presets and 5-4-3-2-1 sensory grounding exercise.
 6. **Conversational Sahaara AI Sessions**: Pre-seeded with 3 realistic dialogues:
    - *Session 1: Post-Meal Blood Sugar & Walking Strategy*
    - *Session 2: Stress Relief & 4-7-8 Breathing Guidance*
    - *Session 3: Emergency Safety Plan & Rapid SOS Overview*
 7. **Emergency SOS System**: Saved spouse contact ready for 1-tap dial, nearby hospital Google Maps locator, and national emergency hotlines.
-8. **↻ Prototype Data Reset**: In the **My Profile** screen, a **Reset Patient Prototype Data** button allows testers to restore the clean prototype mock data at any time after making test edits.
+8. **↻ Prototype Data Reset**: In the **My Profile** screen, a **Reset Prototype Data** button allows testers to restore the clean prototype mock data at any time after making test edits.
 
 ---
 
