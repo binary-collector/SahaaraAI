@@ -7,7 +7,7 @@ const State = {
   prescriptions: [],
   records: [],
   alerts: [],
-  settings: { gracePeriodMinutes: 60, dueWindowMinutes: 0, demoClockOffset: 0, notificationsEnabled: false },
+  settings: { gracePeriodMinutes: 60, dueWindowMinutes: 0, demoClockOffset: 0, notificationsEnabled: false, language: 'en' },
   route: 'dashboard',
   selectedDate: null,
 };

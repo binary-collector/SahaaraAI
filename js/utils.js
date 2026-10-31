@@ -29,13 +29,15 @@ function formatDate(s) {
   if (!s) return '';
   const d = parseDate(s);
   if (isNaN(d.getTime())) return String(s);
-  return d.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  const locale = (typeof getLanguage === 'function' && getLanguage() === 'hi') ? 'hi-IN' : undefined;
+  return d.toLocaleDateString(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 }
 function formatDateShort(s) {
   if (!s) return '';
   const d = parseDate(s);
   if (isNaN(d.getTime())) return String(s);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const locale = (typeof getLanguage === 'function' && getLanguage() === 'hi') ? 'hi-IN' : undefined;
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 function addDays(dateStr, n) {
   const d = parseDate(dateStr);
@@ -70,7 +72,11 @@ const CATEGORIES = [
   { id: 'other', label: 'Other non-pharmacological', icon: '📋', cssClass: 'cat-other' },
 ];
 function getCategoryInfo(id) {
-  return CATEGORIES.find(c => c.id === id) || CATEGORIES[6];
+  const cat = CATEGORIES.find(c => c.id === id) || CATEGORIES[6];
+  return {
+    ...cat,
+    label: (typeof t === 'function') ? t(cat.label) : cat.label
+  };
 }
 
 function toast(msg, isError) {

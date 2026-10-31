@@ -91,3 +91,158 @@ const ic = (name, sz) => {
   const s = sz ? ` style="width:${sz}px;height:${sz}px"` : '';
   return `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"${s}>${p}</svg>`;
 };
+
+// ==========================================================================
+// Sahaara AI — Internationalization (i18n) & Multilingual Engine
+// ==========================================================================
+
+const I18N = {
+  hi: {
+    // Navigation & Tabs
+    "Wellbeing Overview": "स्वास्थ्य अवलोकन",
+    "Mood Check-in": "मूड चेक-इन",
+    "Daily Reflection": "दैनिक आत्म-चिंतन",
+    "Private Journal": "निजी डायरी",
+    "Mood Trends & Insights": "मूड रुझान एवं विश्लेषण",
+    "Wellbeing Toolkit": "स्वास्थ्य टूलकिट",
+    "Sahaara AI Assistant": "सहारा AI सहायक",
+    "Today's Plan": "आज की योजना",
+    "Self-Care Activities": "स्व-देखभाल गतिविधियाँ",
+    "Reminders & Alerts": "अनुस्मारक और अलर्ट",
+    "Reports": "स्वास्थ्य रिपोर्ट",
+    "My Profile": "मेरी प्रोफ़ाइल",
+    "Settings": "सेटिंग्स",
+    "Overview": "अवलोकन",
+    "Mood": "मूड",
+    "Journal": "डायरी",
+    "Insights": "विश्लेषण",
+    "More": "अधिक",
+    "All pages": "सभी पृष्ठ",
+
+    // Header & Actions
+    "Sign Out / Switch": "साइन आउट / बदलें",
+    "Sign Out": "साइन आउट",
+    "Language": "भाषा (Language)",
+    "Select interface and voice language": "इंटरफ़ेस और आवाज़ की भाषा चुनें",
+
+    // Dashboard
+    "Hello": "नमस्ते",
+    "Friend": "मित्र",
+    "Start Today's Self-Care Plan": "आज की स्व-देखभाल योजना शुरू करें",
+    "How have you been feeling?": "आज आप कैसा महसूस कर रहे हैं?",
+    "A quick check-in can help you build a picture of your wellbeing over time.": "एक त्वरित चेक-इन आपको समय के साथ अपने स्वास्थ्य की स्पष्ट तस्वीर बनाने में मदद करता है।",
+    "Check in again": "पुनः मूड जांचें",
+    "Start mood check-in": "मूड चेक-इन शुरू करें",
+    "Daily reflection": "दैनिक आत्म-चिंतन",
+    "Open journal": "डायरी खोलें",
+    "View insights": "विश्लेषण देखें",
+    "Wellbeing toolkit": "स्वास्थ्य टूलकिट",
+    "Today's Adherence": "आज का पालन (Adherence)",
+    "Completed": "पूर्ण",
+    "Pending (Upcoming / Due)": "लंबित (आगामी / बाकी)",
+    "Pending": "लंबित",
+    "Missed": "छूट गया",
+    "Next Scheduled Activity": "अगली निर्धारित गतिविधि",
+    "None remaining today.": "आज कोई अन्य गतिविधि शेष नहीं है।",
+    "7-Day Adherence": "7-दिवसीय पालन दर",
+    "Alerts": "अलर्ट",
+    "View all →": "सभी देखें →",
+    "Nothing scheduled today": "आज के लिए कुछ निर्धारित नहीं है",
+    "Add self-care prescriptions to see your daily plan here.": "अपनी दैनिक योजना यहाँ देखने के लिए स्व-देखभाल परामर्श जोड़ें।",
+    "Manage Prescriptions": "परामर्श प्रबंधित करें",
+
+    // Today's Plan & Task Cards
+    "Completed": "पूर्ण",
+    "Skipped": "छोड़ा गया",
+    "Missed": "छूट गया",
+    "Due now": "अभी बाकी",
+    "Upcoming": "आगामी",
+    "Complete": "पूर्ण करें",
+    "Skip": "छोड़ें",
+    "Undo": "पूर्ववत करें",
+    "Available at scheduled time": "निर्धारित समय पर उपलब्ध",
+    "Prev": "पिछला",
+    "Today": "आज",
+    "Next": "अगला",
+    "Nothing scheduled for this date": "इस तिथि के लिए कुछ भी निर्धारित नहीं है",
+    "Check your prescriptions or adjust the date.": "अपने परामर्श देखें या तिथि समायोजित करें।",
+    "Logged late": "देर से दर्ज",
+    "Demo": "डेमो",
+    "Simulated": "सिम्युलेटेड",
+
+    // Categories
+    "Diet & nutrition": "आहार एवं पोषण",
+    "Diet plan check-in": "आहार योजना चेक-इन",
+    "Physical activity": "शारीरिक गतिविधि (व्यायाम)",
+    "Sleep routine": "नींद एवं विश्राम",
+    "Hydration": "जल-आपूर्ति (Hydration)",
+    "Stress management": "तनाव प्रबंधन",
+    "Breathing / clinician-approved wellness": "श्वास व्यायाम / प्राणायाम",
+    "Other non-pharmacological": "दवाई एवं अन्य परामर्श",
+
+    // Wellbeing Suite
+    "Daily wellbeing reflection": "दैनिक स्वास्थ्य चिंतन",
+    "Private journal": "निजी डायरी",
+    "Wellbeing toolkit": "स्वास्थ्य टूलकिट",
+    "Write freely…": "स्वतंत्र रूप से लिखें…",
+    "Save journal entry": "डायरी प्रविष्टि सहेजें",
+    "Recent entries": "हाल की प्रविष्टियां",
+    "Delete entry": "प्रविष्टि हटाएं",
+    "Delete": "हटाएं",
+    "Save reflection": "चिंतन सहेजें",
+
+    // Disclaimers
+    "Demonstration prototype — not a medical record or medical advice.": "डेमो प्रोटोटाइप — यह कोई चिकित्सीय रिकॉर्ड या चिकित्सा सलाह नहीं है।",
+    "If you feel unwell or have concerns, contact your healthcare provider or local emergency services.": "यदि आप अस्वस्थ महसूस करते हैं, तो अपने चिकित्सक या आपातकालीन सेवाओं से संपर्क करें।"
+  }
+};
+
+function getLanguage() {
+  if (typeof State !== 'undefined' && State.settings && State.settings.language) {
+    return State.settings.language;
+  }
+  try {
+    const s = localStorage.getItem('sahaara_lang');
+    if (s) return s;
+  } catch (_) {}
+  return 'en';
+}
+
+function t(text) {
+  if (!text) return '';
+  const lang = getLanguage();
+  if (lang === 'hi' && I18N.hi && I18N.hi[text]) {
+    return I18N.hi[text];
+  }
+  return text;
+}
+
+function setLanguage(lang) {
+  const target = (lang === 'hi' || lang === 'hi-IN') ? 'hi' : 'en';
+  if (typeof State !== 'undefined') {
+    if (!State.settings) State.settings = {};
+    State.settings.language = target;
+    if (typeof saveState === 'function') saveState();
+  }
+  try {
+    if (typeof store !== 'undefined') store.set('sahaara_lang', target);
+    localStorage.setItem('sahaara_lang', target);
+  } catch (_) {}
+
+  if (typeof AI !== 'undefined') {
+    AI.language = target;
+    AI.autoTranslate = (target !== 'en');
+  }
+  if (typeof VoiceMode !== 'undefined') {
+    VoiceMode.preferredLang = (target === 'hi') ? 'hi-IN' : 'en-IN';
+    if (VoiceMode.recognition) VoiceMode.recognition.lang = (target === 'hi') ? 'hi-IN' : 'en-IN';
+  }
+  if (typeof render === 'function') render();
+  if (typeof toast === 'function') {
+    toast(target === 'hi' ? 'भाषा बदलकर हिन्दी कर दी गई है।' : 'Language switched to English.');
+  }
+}
+
+function toggleLanguage() {
+  setLanguage(getLanguage() === 'hi' ? 'en' : 'hi');
+}

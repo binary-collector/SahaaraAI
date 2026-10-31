@@ -46,6 +46,14 @@ function startAppAfterAuth() {
   if (typeof Auth !== 'undefined' && Auth.currentUser) {
     Auth.syncWithState(State);
   }
+  const curLang = (typeof getLanguage === 'function') ? getLanguage() : 'en';
+  if (typeof AI !== 'undefined') {
+    AI.language = curLang;
+    AI.autoTranslate = (curLang !== 'en');
+  }
+  if (typeof VoiceMode !== 'undefined') {
+    VoiceMode.preferredLang = (curLang === 'hi') ? 'hi-IN' : 'en-IN';
+  }
   render();
   setInterval(() => {
     try {

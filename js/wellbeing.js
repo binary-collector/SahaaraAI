@@ -110,10 +110,10 @@ function openMoreSheet() {
   const wrap = document.createElement('div');
   wrap.id = 'more-sheet';
   wrap.className = 'more-overlay';
-  wrap.innerHTML = '<div class="more-sheet" role="dialog" aria-modal="true" aria-label="All pages"><div class="more-grab" aria-hidden="true"></div>' +
-    '<div class="more-head"><h2>All pages</h2><button type="button" class="btn btn-g btn-ic" data-more-close aria-label="Close">' + ic('x') + '</button></div>' +
+  wrap.innerHTML = '<div class="more-sheet" role="dialog" aria-modal="true" aria-label="' + esc((typeof t === 'function') ? t('All pages') : 'All pages') + '"><div class="more-grab" aria-hidden="true"></div>' +
+    '<div class="more-head"><h2>' + ((typeof t === 'function') ? t('All pages') : 'All pages') + '</h2><button type="button" class="btn btn-g btn-ic" data-more-close aria-label="Close">' + ic('x') + '</button></div>' +
     '<div class="more-list">' + NAV_ITEMS.map(n => '<button type="button" class="more-item' + (State.route === n.id ? ' on' : '') + '" data-route="' + esc(n.id) + '"' +
-      (State.route === n.id ? ' aria-current="page"' : '') + '>' + ic(n.icon) + '<span>' + esc(n.label) + '</span>' +
+      (State.route === n.id ? ' aria-current="page"' : '') + '>' + ic(n.icon) + '<span>' + esc((typeof t === 'function') ? t(n.label) : n.label) + '</span>' +
       (n.id === 'alerts' && alerts ? '<span class="chip bad">' + alerts + '</span>' : '') + '</button>').join('') + '</div></div>';
   wrap.addEventListener('click', function(e) {
     if (e.target === wrap || e.target.closest('[data-more-close]')) { closeMoreSheet(); return; }
