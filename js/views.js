@@ -650,13 +650,13 @@ function renderProfile() {
         <div>
           <div style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px">
             ${esc(Auth.currentUser.name)}
-            <span class="chip ok" style="font-size:11px;padding:1px 6px">${Auth.isPrototypeAccount() ? "Prototype Showcase" : "Active Session"}</span>
+            <span class="chip ok" style="font-size:11px;padding:1px 6px">${Auth.isPatientPrototypeAccount() ? "Patient Prototype" : (Auth.isPrototypeAccount() ? "Prototype Showcase" : "Active Session")}</span>
           </div>
           <div class="muted" style="font-size:13px">${esc(Auth.currentUser.email)}</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${Auth.isPrototypeAccount() ? '<button type="button" class="btn btn-o btn-sm" onclick="Auth.loadPrototypeShowcaseData(); toast(\'Prototype data reset successfully!\'); render();" title="Reset all prototype mock data">↻ Reset Prototype Data</button>' : ''}
+        ${Auth.isPrototypeAccount() ? '<button type="button" class="btn btn-o btn-sm" onclick="Auth.loadPrototypeShowcaseData(); toast(\'Prototype data reset successfully!\'); render();" title="Reset all prototype mock data">↻ Reset ' + (Auth.isPatientPrototypeAccount() ? 'Patient Prototype Data' : 'Prototype Data') + '</button>' : ''}
         <button type="button" class="btn btn-o btn-sm" onclick="Auth.logout()">Sign Out / Switch Account</button>
       </div>
     </div>
@@ -845,14 +845,20 @@ function clearDemoClock() {
   toast('Demo clock reset to real time');
 }
 function loadDemoPatient() {
+  if (typeof Auth !== 'undefined' && typeof Auth.loadPrototypeShowcaseData === 'function') {
+    Auth.loadPrototypeShowcaseData('patient');
+    render();
+    toast('Demo patient loaded: Ananya Sharma');
+    return;
+  }
   State.profile = {
     id: uid(),
     name: 'Ananya Sharma',
-    age: 45,
-    patientId: 'DEMO-001',
+    age: 42,
+    patientId: 'PAT-84920',
     condition: 'Type 2 diabetes',
-    clinician: 'Dr. Mehta',
-    reminderTimes: ['08:00', '18:00', '22:00'],
+    clinician: 'Dr. Rajesh Patel, MD',
+    reminderTimes: ['07:30', '08:00', '10:00', '14:00', '18:00', '20:30', '22:00'],
     isDemo: true,
   };
   saveState();

@@ -14,39 +14,39 @@
 
 ---
 
-## ⚡ Prototype Testing Account (Full-Feature Showcase)
+## ⚡ Patient Prototype Account (Full-Feature Showcase)
 
-A fully configured dummy testing account is built directly into the system to demonstrate **every feature** of Sahaara AI immediately without requiring manual setup:
+A fully configured dummy patient testing account is built directly into the system to demonstrate **every feature** of Sahaara AI immediately without requiring manual setup:
 
 ### Quick Access Options:
-- **1-Click Prototype Access**: Click the **`⚡ Explore Full-Feature Prototype (1-Click)`** button on the Sign-In screen.
+- **1-Click Prototype Access**: Click the **`⚡ Explore Patient Prototype Account (1-Click)`** button on the Sign-In screen.
 - **Manual Credentials**:
-  - **Email**: `demo.prototype@sahaara.ai` (or `sarah.mitchell@sahaara.ai`)
+  - **Email**: `patient.prototype@sahaara.ai` (or `patient@sahaara.ai` / `demo.prototype@sahaara.ai`)
   - **Password**: `password123`
 
-### What This Prototype Demonstrates:
-1. **Clinical Profile**: Complete patient identity (`Dr. Sarah Mitchell`, Age 34, Patient ID `CT-84920`, Condition: `Type 2 diabetes`, Clinician: `Dr. Rajesh Patel, MD`, Emergency Contact: `David Mitchell`).
+### What This Patient Prototype Demonstrates:
+1. **Patient Profile**: Complete patient identity (`Ananya Sharma`, Age 42, Patient ID `PAT-84920`, Condition: `Type 2 diabetes`, Clinician: `Dr. Rajesh Patel, MD`, Emergency Contact: `Vikram Sharma (Spouse)` at `+91 98765 43210`).
 2. **7 Multi-Category Prescriptions**:
-   - 🌬️ **Breathing**: Morning Diaphragmatic Box Breathing (`07:30`)
-   - 🍏 **Diet**: Balanced Breakfast & Glucose Log (`08:00`)
+   - 🌬️ **Breathing**: Morning Diaphragmatic Box Breathing (Pranayama) (`07:30`)
+   - 🍏 **Diet**: Balanced Breakfast & Fasting Blood Sugar Log (`08:00`)
    - 💊 **Medication**: Metformin Hydrochloride 500mg (`08:30`, `19:30`)
-   - 💧 **Hydration**: Hydration Target 250ml water (`10:00`, `14:00`, `16:30`)
+   - 💧 **Hydration**: Hydration Target 250ml Water (`10:00`, `14:00`, `16:30`)
    - 🏃 **Activity**: Cardio Interval Walk & Movement Break (`18:00`)
-   - 🧘 **Stress**: Evening Decompression & Progressive Relaxation (`20:30`)
+   - 🧘 **Stress**: Evening Stress Decompression & Reflection (`20:30`)
    - 🌙 **Sleep**: Sleep Hygiene Wind-down & Screen Cutoff (`22:00`)
 3. **Today's Plan Schedule**: Morning tasks marked completed with realistic timestamps; afternoon/evening tasks scheduled in pending states with dynamic progress bars.
-4. **7-Day Adherence Records**: 6 days of historical logs generating a **92% Adherence Rate** that dynamically powers the adherence mini-bar charts and Reports screen.
+4. **7-Day Adherence Records**: 6 days of historical logs generating a **93% Adherence Rate** that dynamically powers the adherence mini-bar charts and Reports screen.
 5. **Wellbeing Suite**:
-   - **Interactive Mood Chart**: 7 consecutive daily mood logs plotting the SVG mood line chart with ratings, emotion tags, sleep hours, stress ratings, and notes.
+   - **Interactive Mood Chart**: 7 consecutive daily mood logs plotting the SVG mood line chart with ratings, emotion tags, sleep hours, stress ratings, and patient notes.
    - **Daily Reflections**: 3 recorded reflection assessments with wellbeing scores.
-   - **Personal Health Journal**: 3 clinical self-care reflection entries.
+   - **Personal Health Journal**: 3 authentic patient self-care reflection entries on living with Type 2 diabetes, scheduled hydration benefits, and using Sahaara AI.
    - **Wellbeing Toolkit**: Breathing presets and 5-4-3-2-1 sensory grounding exercise.
 6. **Conversational Sahaara AI Sessions**: Pre-seeded with 3 realistic dialogues:
    - *Session 1: Post-Meal Blood Sugar & Walking Strategy*
    - *Session 2: Stress Relief & 4-7-8 Breathing Guidance*
    - *Session 3: Emergency Safety Plan & Rapid SOS Overview*
 7. **Emergency SOS System**: Saved spouse contact ready for 1-tap dial, nearby hospital Google Maps locator, and national emergency hotlines.
-8. **↻ Prototype Data Reset**: In the **My Profile** screen, a **Reset Prototype Data** button allows testers to restore the clean prototype mock data at any time after making test edits.
+8. **↻ Prototype Data Reset**: In the **My Profile** screen, a **Reset Patient Prototype Data** button allows testers to restore the clean prototype mock data at any time after making test edits.
 
 ---
 

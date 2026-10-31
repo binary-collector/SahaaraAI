@@ -219,6 +219,18 @@
   flex-wrap: wrap;
 }
 
+.prototype-credentials-badge .cred-pill {
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: var(--r1, 6px);
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.prototype-credentials-badge .cred-pill:hover {
+  background-color: var(--brand-100, #ccfbf1);
+  transform: translateY(-1px);
+}
+
 .prototype-credentials-badge code {
   font-family: monospace;
   font-weight: 600;
