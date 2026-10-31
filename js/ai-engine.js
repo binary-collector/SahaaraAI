@@ -285,6 +285,14 @@ function closeAIPanel() {
   AI.isListening = false;
   if (AI.synthesis && AI.isSpeaking) { try { AI.synthesis.cancel(); } catch(e) {} AI.isSpeaking = false; }
 }
+window.addEventListener('resize', function() {
+  const panel = document.getElementById('ai-panel');
+  if (panel && AI.panelOpen) {
+    const isMobile = window.innerWidth <= 640;
+    panel.classList.toggle('mobile', isMobile);
+    panel.classList.toggle('desktop', !isMobile);
+  }
+});
 function renderAIPanel() {
   const panel = document.getElementById('ai-panel');
   if (!panel) return;
@@ -352,10 +360,10 @@ function renderAIChatInner(mode) {
       : '<span class="chip ok" style="font-size:9px;margin-left:4px">Active</span>') + '</h3>' +
     '<div class="ai-status ' + statusClass + '">' + statusDot + ' ' + esc(statusText) + '</div>' +
     '</div></div><div class="row gap2">' +
-    (mode === 'full' ? '' : '<button class="btn btn-sm btn-g btn-ic" style="height:32px;min-height:32px;width:32px;font-size:11px" onclick="newChatSession()" title="New chat">+ New</button>') +
-    '<select class="input" style="width:auto;min-height:32px;height:32px;font-size:11px;padding:2px 6px;border-radius:8px" onchange="setAILanguage(this.value)" title="Language" aria-label="Language">' + langOptions + '</select>' +
-    '<button class="btn btn-sm btn-g btn-ic" onclick="toggleAIVoice()" title="' + (AI.voiceEnabled ? 'Mute voice' : 'Enable voice') + '" aria-label="' + (AI.voiceEnabled ? 'Mute voice' : 'Enable voice') + '">' + ic(AI.voiceEnabled ? 'volume-2' : 'mic-off', 16) + '</button>' +
-    (mode === 'full' ? '' : '<button class="btn btn-sm btn-g btn-ic" onclick="closeAIPanel()" aria-label="Close">' + ic('x', 16) + '</button>') +
+    (mode === 'full' ? '' : '<button class="btn btn-sm btn-g btn-ic" style="height:32px;min-height:32px;width:32px" onclick="newChatSession()" title="New chat" aria-label="New chat">' + ic('plus', 16) + '</button>') +
+    '<select class="input" style="width:auto;max-width:96px;min-height:32px;height:32px;font-size:11px;padding:2px 6px;border-radius:8px;cursor:pointer" onchange="setAILanguage(this.value)" title="Language" aria-label="Language">' + langOptions + '</select>' +
+    '<button class="btn btn-sm btn-g btn-ic" style="height:32px;min-height:32px;width:32px" onclick="toggleAIVoice()" title="' + (AI.voiceEnabled ? 'Mute voice' : 'Enable voice') + '" aria-label="' + (AI.voiceEnabled ? 'Mute voice' : 'Enable voice') + '">' + ic(AI.voiceEnabled ? 'volume-2' : 'mic-off', 16) + '</button>' +
+    (mode === 'full' ? '' : '<button class="btn btn-sm btn-g btn-ic" style="height:32px;min-height:32px;width:32px" onclick="closeAIPanel()" aria-label="Close" title="Close">' + ic('x', 16) + '</button>') +
     '</div></div>' +
     '<div class="ai-quick-actions" aria-label="Suggested questions">' + quickHtml + '</div>' +
     '<div class="ai-messages" id="ai-msgs-' + (mode === 'panel' ? 'panel' : 'full') + '" aria-live="polite">' +
@@ -395,9 +403,10 @@ function renderAIMessage(m) {
     ? '<div class="ai-msg-actions"><button type="button" onclick="copyAIMessage(\'' + esc(m.id) + '\')" aria-label="Copy message" title="Copy message">Copy</button>' +
       (m.error ? '<button type="button" onclick="retryAIMessage(\'' + esc(m.id) + '\')" aria-label="Retry response">Retry</button>' : '') + '</div>'
     : '';
+  const bubbleClass = m.emergency ? 'bubble emergency-bubble' : 'bubble';
   return '<div class="ai-msg ' + (m.role === 'bot' ? 'bot' : 'user') + '" data-msg-id="' + esc(m.id || '') + '">' +
     '<div class="msg-avatar" aria-hidden="true">' + avatar + '</div><div class="msg-body">' +
-    '<div class="bubble"' + streamId + titleAttr + '>' + messageBody + '</div>' + actions +
+    '<div class="' + bubbleClass + '"' + streamId + titleAttr + '>' + messageBody + '</div>' + actions +
     '<div class="meta">' + esc(timeStr) + esc(srcLabel) + '</div></div></div>';
 }
 function renderMarkdownLite(text) {

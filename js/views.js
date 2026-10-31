@@ -80,10 +80,11 @@ function renderDashboard() {
     chartData.push({ date: d, pct: stats.pct, label: formatDateShort(d) });
   }
   const undismissedAlerts = State.alerts.filter(a => !a.dismissed).slice(0, 3);
+  const isDoc = typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor();
   return `
-  <div class="page-h"><div><h1>${t('Hello')}, ${esc(State.profile ? State.profile.name : t('Friend'))}</h1><p class="muted">${esc(State.profile && State.profile.condition ? State.profile.condition : 'Personal Health Plan')} · ${formatDate(today)}</p></div><button class="btn btn-p" onclick="navigate('today')">${t("Start Today's Self-Care Plan")} ${ic('arrow-left', 0).replace('M19 12H5M12 19l-7-7 7-7','M5 12h14M12 5l7 7-7 7')}</button></div>
-  ${State.profile && State.profile.isDemo ? '<div class="banner info mb16">' + ic('info', 16) + '<span>Synthetic demonstration data — not real patient information.</span></div>' : ''}
-  ${(() => { const md=monitorData(); const last=md.moods[md.moods.length-1]; return `<div class="card p20 mb24"><div class="row sb wrap"><div><h3>${t('How have you been feeling?')}</h3><p class="muted mt8">${last ? `Last check-in: ${esc(last.emotion)} · mood ${last.mood}/5 · ${esc(last.dateLabel||monitorDateLabel(last.at))}` : t('A quick check-in can help you build a picture of your wellbeing over time.')}</p></div><button class="btn btn-p" onclick="navigate('mood')">${last?t('Check in again'):t('Start mood check-in')}</button></div><div class="row wrap mt16" style="gap:8px"><button class="btn btn-o btn-sm" onclick="navigate('assessment')">${t('Daily reflection')}</button><button class="btn btn-o btn-sm" onclick="navigate('journal')">${t('Open journal')}</button><button class="btn btn-o btn-sm" onclick="navigate('insights')">${t('View insights')}</button><button class="btn btn-o btn-sm" onclick="navigate('toolkit')">${t('Wellbeing toolkit')}</button></div></div>`; })()}
+  <div class="page-h"><div><h1>${t('Hello')}, ${esc(isDoc && Auth.currentUser ? Auth.currentUser.name : (State.profile ? State.profile.name : t('Friend')))}</h1><p class="muted">${isDoc ? `${t('Clinician Review Mode')} · ${t('Reviewing clinical self-care logs for patient')} <strong>${esc(State.profile ? State.profile.name : 'Patient')}</strong> (${esc(State.profile && State.profile.patientId ? State.profile.patientId : 'PAT-84920')})` : esc(State.profile && State.profile.condition ? State.profile.condition : 'Personal Health Plan')} · ${formatDate(today)}</p></div><button class="btn btn-p" onclick="navigate('today')">${isDoc ? t("View Patient's Daily Plan") : t("Start Today's Self-Care Plan")} ${ic('arrow-left', 0).replace('M19 12H5M12 19l-7-7 7-7','M5 12h14M12 5l7 7-7 7')}</button></div>
+  ${isDoc ? `<div class="banner info mb16" style="background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.3);display:flex;align-items:center;gap:10px">${ic('shield', 20)}<div><strong>${t('Clinician Review Mode')} (${esc(Auth.currentUser ? Auth.currentUser.name : 'Dr. Sarah Mitchell, MD')})</strong> — ${t('Reviewing clinical self-care logs for patient')} <strong>${esc(State.profile ? State.profile.name : 'Patient')}</strong> (${esc(State.profile && State.profile.patientId ? State.profile.patientId : 'PAT-84920')}, ${esc(State.profile ? State.profile.condition : 'Type 2 Diabetes')}). ${t('Logs are read-only.')}</div></div>` : (State.profile && State.profile.isDemo ? '<div class="banner info mb16">' + ic('info', 16) + '<span>Synthetic demonstration data — not real patient information.</span></div>' : '')}
+  ${(() => { const md=monitorData(); const last=md.moods[md.moods.length-1]; return `<div class="card p20 mb24"><div class="row sb wrap"><div><h3>${isDoc ? t('Patient Mood & Wellbeing Trends') : t('How have you been feeling?')}</h3><p class="muted mt8">${last ? `${isDoc ? 'Patient last check-in' : 'Last check-in'}: ${esc(last.emotion)} · mood ${last.mood}/5 · ${esc(last.dateLabel||monitorDateLabel(last.at))}` : (isDoc ? t('No check-ins recorded yet by patient.') : t('A quick check-in can help you build a picture of your wellbeing over time.'))}</p></div><button class="btn btn-p" onclick="navigate('mood')">${isDoc ? t('Review Patient Mood') : (last ? t('Check in again') : t('Start mood check-in'))}</button></div><div class="row wrap mt16" style="gap:8px"><button class="btn btn-o btn-sm" onclick="navigate('assessment')">${isDoc ? t('View reflections') : t('Daily reflection')}</button><button class="btn btn-o btn-sm" onclick="navigate('journal')">${isDoc ? t('Read journal') : t('Open journal')}</button><button class="btn btn-o btn-sm" onclick="navigate('insights')">${t('View insights')}</button><button class="btn btn-o btn-sm" onclick="navigate('toolkit')">${t('Wellbeing toolkit')}</button></div></div>`; })()}
   <div class="grid g4 mb24"><div class="card p16 stat-card"><p class="xs">${t("Today's Adherence")}</p><p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px">${todayPct !== null ? todayPct + '%' : '—'}</p><p class="xs">${todayCompleted} of ${todayScheduled} completed</p><div class="bar mt8"><i style="width:${todayPct || 0}%"></i></div></div><div class="card p16"><p class="xs">${t('Completed')}</p><p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px;color:var(--ok-text)">${completed}</p></div><div class="card p16"><p class="xs">${t('Pending (Upcoming / Due)')}</p><p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px;color:var(--info-text)">${pending}</p></div><div class="card p16"><p class="xs">${t('Missed')}</p><p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px;color:var(--danger-text)">${missed}</p></div></div><div class="grid g2 mb24"><div class="card p20"><h3 class="mb16">${t('Next Scheduled Activity')}</h3>
       ${nextUpcoming ? `<div class="row" style="gap:12px"><span class="cat-icon ${getCategoryInfo(nextUpcoming.category).cssClass}">${getCategoryInfo(nextUpcoming.category).icon}</span><div><p style="font-weight:600">${esc(nextUpcoming.title)}</p><p class="muted">${formatTime12(nextUpcoming.time)} · ${getCategoryInfo(nextUpcoming.category).label}</p></div></div>` : '<p class="muted">' + t('None remaining today.') + '</p>'}
     </div><div class="card p20"><h3 class="mb16">${t('7-Day Adherence')}</h3>
@@ -116,6 +117,7 @@ function renderMiniChart(data) {
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img" aria-label="7-day adherence chart">${bars}</svg>`;
 }
 function renderTodayPlan() {
+  const isDoc = typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor();
   const date = State.selectedDate || todayStr();
   const today = todayStr();
   const occs = getAllOccurrencesForDate(date);
@@ -130,7 +132,9 @@ function renderTodayPlan() {
   }
   const dayPct = dayTotal > 0 ? Math.round(dayCompleted / dayTotal * 100) : null;
   return `
-  <div class="page-h"><h1>${t("Today's Plan")}</h1></div><div class="banner brand mb16">
+  <div class="page-h"><h1>${isDoc ? t("Patient's Daily Self-Care Plan") : t("Today's Plan")}</h1></div>
+  ${isDoc ? `<div class="banner info mb16" style="background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.3);display:flex;align-items:center;gap:10px">${ic('shield', 18)}<div><strong>${t('Clinician Review Mode')} (${esc(Auth.currentUser ? Auth.currentUser.name : 'Dr. Sarah Mitchell, MD')})</strong> — ${t('Viewing patient self-care schedule and completion logs in read-only mode.')}</div></div>` : ''}
+  <div class="banner brand mb16">
     ${ic('info', 16)}
     <div><strong>${t('How statuses work:')}</strong>
       ${t('Upcoming')} (future) → ${t('Due now')} (time arrived, within ${grace} min grace) → ${t('Missed')} (grace period passed).
@@ -176,7 +180,9 @@ function renderTaskCard(occ, viewDate) {
       break;
   }
   let actions = '';
-  if (status.status === 'completed' || status.status === 'skipped') {
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    actions = `<span class="xs muted" style="font-weight:600;display:inline-flex;align-items:center;gap:5px">${ic('shield', 13)} ${t('Clinician Read-Only: Patient records self-care logs')}</span>`;
+  } else if (status.status === 'completed' || status.status === 'skipped') {
     actions = `<button class="btn btn-sm btn-o" onclick="undoOccurrence('${occ.prescriptionId}','${occ.date}','${occ.time}');toast('Undone — task returned to its computed status')">${ic('undo', 14)} ${t('Undo')}</button>`;
   } else if (status.status === 'missed' || status.status === 'due') {
     actions = `
@@ -638,10 +644,17 @@ function exportCSV() {
   toast('CSV exported');
 }
 function renderProfile() {
+  const isDoc = typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor();
   const p = State.profile;
   const conditions = ['Type 2 diabetes', 'Hypertension', 'Chronic respiratory disease', 'Cardiovascular disease', 'Other'];
   return `
-  <div class="page-h"><h1>My Profile</h1></div>
+  <div class="page-h"><h1>${isDoc ? t('Patient Profile (Clinician Review)') : t('My Profile')}</h1></div>
+  ${isDoc ? `
+    <div class="banner info mb16" style="background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.3);display:flex;align-items:center;gap:10px">
+      ${ic('shield', 18)}
+      <div><strong>${t('Clinician Review Mode')} (${esc(Auth.currentUser ? Auth.currentUser.name : 'Dr. Sarah Mitchell, MD')})</strong> — Reviewing profile for patient <strong>${esc(p ? p.name : 'Ananya Sharma')}</strong> (${esc(p && p.patientId ? p.patientId : 'PAT-84920')}). Clinicians have read-only access to patient logs.</div>
+    </div>
+  ` : ''}
   ${(typeof Auth !== "undefined" && Auth.currentUser) ? `
     <div class="card p16 mb20 user-account-badge" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-left:4px solid var(--brand-500)">
       <div style="display:flex;align-items:center;gap:12px">

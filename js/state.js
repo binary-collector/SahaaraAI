@@ -249,6 +249,10 @@ function calcDetailedAdherence(startDate, endDate) {
   return { scheduled, completed, skipped, missed, pct: scheduled > 0 ? Math.round(completed / scheduled * 100) : null };
 }
 function completeOccurrence(prescriptionId, date, time) {
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    if (typeof toast === 'function') toast('Clinicians have read-only access. Patient self-care tasks can only be logged by the patient.', true);
+    return;
+  }
   const existing = getRecordForOccurrence(prescriptionId, date, time);
   const rx = State.prescriptions.find(r => r.id === prescriptionId);
   const n = now();
@@ -278,6 +282,10 @@ function completeOccurrence(prescriptionId, date, time) {
   render();
 }
 function skipOccurrence(prescriptionId, date, time, reason) {
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    if (typeof toast === 'function') toast('Clinicians have read-only access. Patient self-care tasks can only be logged by the patient.', true);
+    return;
+  }
   const existing = getRecordForOccurrence(prescriptionId, date, time);
   const rx = State.prescriptions.find(r => r.id === prescriptionId);
   const n = now();
@@ -304,6 +312,10 @@ function skipOccurrence(prescriptionId, date, time, reason) {
   render();
 }
 function undoOccurrence(prescriptionId, date, time) {
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    if (typeof toast === 'function') toast('Clinicians have read-only access to patient logs.', true);
+    return;
+  }
   const idx = State.records.findIndex(r =>
     r.prescriptionId === prescriptionId && r.date === date && r.time === time
   );
@@ -314,6 +326,10 @@ function undoOccurrence(prescriptionId, date, time) {
   }
 }
 function simulateMissed(prescriptionId, date, time) {
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    if (typeof toast === 'function') toast('Clinicians have read-only access.', true);
+    return;
+  }
   const existing = getRecordForOccurrence(prescriptionId, date, time);
   const rx = State.prescriptions.find(r => r.id === prescriptionId);
   const n = now();

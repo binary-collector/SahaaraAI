@@ -385,14 +385,12 @@
   border-radius: 4px;
 }
 
-/* Individual Message Layout — Strict Boundary Containment */
+/* Individual Message Layout — Optimized Boundary Containment & Fit */
 .ai-msg {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   animation: msgFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
   min-width: 0 !important;
-  max-width: 86% !important;
-  width: auto;
   box-sizing: border-box !important;
 }
 @keyframes msgFadeIn {
@@ -403,15 +401,18 @@
   align-self: flex-end;
   flex-direction: row-reverse;
   margin-left: auto;
+  max-width: 84% !important;
 }
 .ai-msg.bot {
   align-self: flex-start;
   flex-direction: row;
   margin-right: auto;
+  max-width: 95% !important;
+  width: auto;
 }
 .ai-msg .msg-avatar {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -425,10 +426,11 @@
   background: var(--brand-soft, #f0fdf4);
   color: var(--brand, #0d9488);
   border: 1px solid var(--brand-200, #a7f3d0);
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.12);
 }
 .ai-msg .msg-avatar svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   color: inherit;
 }
 .ai-msg.user .msg-avatar {
@@ -452,21 +454,18 @@
   align-items: flex-start;
 }
 
-/* THE BUBBLE — Completely overflow-proof and responsive */
+/* THE BUBBLE — Completely overflow-proof, perfectly fitted, and responsive */
 .ai-msg .bubble {
   border-radius: 18px;
-  padding: 10px 14px;
+  padding: 11px 15px;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.58;
   box-sizing: border-box !important;
   max-width: 100% !important;
   width: fit-content;
-  word-wrap: break-word !important;
   overflow-wrap: break-word !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-  hyphens: auto;
-  overflow: hidden;
+  word-wrap: break-word !important;
+  word-break: normal;
   position: relative;
 }
 .ai-msg.bot .bubble {
@@ -474,19 +473,26 @@
   color: var(--text, #0f172a);
   border: 1px solid var(--line, #e2e8f0);
   border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
 }
 .ai-msg.user .bubble {
   background: var(--brand, #0d9488);
   color: #ffffff;
   border: 1px solid transparent;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.28);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
+}
+.ai-msg .bubble.emergency-bubble {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
 }
 .ai-msg .bubble p {
   margin: 0 0 8px;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .ai-msg .bubble p:last-child {
   margin-bottom: 0;
@@ -494,23 +500,25 @@
 .ai-msg .bubble ul,
 .ai-msg .bubble ol {
   margin: 6px 0 8px;
-  padding-left: 18px;
+  padding-left: 20px;
   max-width: 100%;
   box-sizing: border-box;
 }
 .ai-msg .bubble li {
-  margin: 2px 0;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  margin: 3px 0;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+.ai-msg .bubble li:last-child {
+  margin-bottom: 0;
 }
 .ai-msg .bubble code {
   font-family: ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
   background: rgba(100, 116, 139, 0.12);
   border-radius: 4px;
-  padding: 1px 5px;
+  padding: 1.5px 5px;
   font-size: 0.88em;
   word-break: break-word;
-  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 .ai-msg.user .bubble code {
@@ -527,7 +535,7 @@
   box-sizing: border-box;
   overflow-x: auto;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
   font-size: 12.5px;
   line-height: 1.5;
 }
@@ -536,7 +544,7 @@
   padding: 0;
   color: inherit;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
 }
 .ai-msg .bubble a {
   color: var(--brand-700, #047857);
@@ -557,16 +565,14 @@
   color: var(--text-2, #475569);
   max-width: 100%;
   box-sizing: border-box;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .ai-msg .bubble .md-h {
   font-weight: 700;
   color: inherit;
   margin: 10px 0 6px;
   line-height: 1.35;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .ai-msg .bubble .md-h:first-child {
   margin-top: 0;
@@ -577,12 +583,11 @@
 .ai-msg .bubble .md-h4 { font-size: 13px; }
 
 .ai-msg .meta {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-3, #94a3b8);
-  margin-top: 3px;
+  margin-top: 4px;
   padding: 0 4px;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -596,7 +601,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 3px 4px 0;
+  padding: 4px 4px 0;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -606,11 +611,13 @@
   color: var(--text-3, #94a3b8);
   font-size: 11px;
   cursor: pointer;
-  padding: 2px 0;
-  transition: color 0.15s;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
 }
 .ai-msg-actions button:hover {
   color: var(--brand, #0d9488);
+  background: var(--brand-soft, #f0fdf4);
 }
 
 /* Typing Indicator */
@@ -1577,6 +1584,16 @@
 /* --------------------------------------------------------------------------
    5. Responsive Breakpoints & Dark Theme
    -------------------------------------------------------------------------- */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .ai-panel.desktop {
+    right: 20px;
+    bottom: calc(138px + env(safe-area-inset-bottom, 0px));
+    width: min(430px, calc(100vw - 40px));
+    height: min(580px, calc(100vh - 210px));
+    min-height: 360px;
+  }
+}
+
 @media (max-width: 1024px) {
   .ai-fab {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
@@ -1653,7 +1670,17 @@
     gap: 12px !important;
   }
   .ai-msg {
-    max-width: 90% !important;
+    gap: 8px !important;
+  }
+  .ai-msg.bot {
+    max-width: 96% !important;
+  }
+  .ai-msg.user {
+    max-width: 86% !important;
+  }
+  .ai-msg .bubble {
+    padding: 10px 13px !important;
+    font-size: 13.5px !important;
   }
   .ai-sessions {
     display: none !important;
@@ -1672,6 +1699,11 @@
 }
 
 @media (max-height: 720px) {
+  .ai-panel.desktop {
+    height: calc(100vh - 110px);
+    bottom: 90px;
+    min-height: 320px;
+  }
   .voice-orb-container {
     width: min(180px, 36vh);
     height: min(180px, 36vh);

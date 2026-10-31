@@ -117,6 +117,23 @@ const Auth = {
            em === 'sarah.mitchell@sahaara.ai';
   },
 
+  isDoctor() {
+    if (!this.currentUser) return false;
+    const role = (this.currentUser.role || '').toLowerCase();
+    const em = (this.currentUser.email || '').toLowerCase();
+    return role === 'clinician' || role === 'doctor' ||
+           em === 'demo.prototype@sahaara.ai' ||
+           em === 'sarah.mitchell@sahaara.ai';
+  },
+
+  isClinician() {
+    return this.isDoctor();
+  },
+
+  canLogData() {
+    return !this.isDoctor();
+  },
+
   login(email, password, isDemo) {
     const cleanEmail = (email || '').trim().toLowerCase();
     const users = this.getUsers();
@@ -255,7 +272,7 @@ const Auth = {
       if (res.success) {
         this.loadPrototypeShowcaseData('doctor');
         if (typeof toast === 'function') {
-          toast('Welcome to Sahaara AI Showcase (Dr. Sarah Mitchell)!');
+          toast('Dr. Sarah Mitchell logged in — Clinician Review Mode (Read-Only Patient Logs)');
         }
         this.closeAuthScreen();
         if (typeof window.startAppAfterAuth === 'function') {
@@ -303,16 +320,17 @@ const Auth = {
     if (typeof State !== 'undefined') {
       if (isDoctor) {
         State.profile = {
-          name: 'Dr. Sarah Mitchell',
-          age: 34,
-          patientId: 'CT-84920',
+          name: 'Ananya Sharma',
+          age: 42,
+          patientId: 'PAT-84920',
           condition: 'Type 2 diabetes',
           conditionDetail: '',
-          clinician: 'Dr. Rajesh Patel, MD (Cardiometabolic Specialist)',
-          emergencyContactName: 'David Mitchell (Spouse)',
-          emergencyContactPhone: '+1 (555) 019-2834',
+          clinician: 'Dr. Sarah Mitchell, MD (Reviewing Clinician)',
+          emergencyContactName: 'Vikram Sharma (Spouse)',
+          emergencyContactPhone: '+91 98765 43210',
           reminderTimes: ['07:30', '08:00', '10:00', '14:00', '18:00', '20:30', '22:00'],
-          isDemo: true
+          isDemo: true,
+          viewMode: 'clinician_review'
         };
       } else {
         // Patient Prototype Account

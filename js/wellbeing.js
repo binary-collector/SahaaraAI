@@ -33,16 +33,103 @@ function monitorChart(list){
   return `<div class="tablewrap"><svg viewBox="0 0 ${W} ${H}" style="min-width:420px;width:100%" role="img" aria-label="Line chart of ${pts.length} recorded mood ratings from ${fmt(t0)} to ${fmt(t1)}, scale 1 to 5. Gaps mean no entry was recorded.">${[1,2,3,4,5].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="currentColor" opacity=".12"/><text x="4" y="${y(v)+4}" font-size="11" fill="currentColor" opacity=".7">${v}</text>`).join('')}<polyline fill="none" stroke="var(--brand,#0d9488)" stroke-width="2" points="${pts.map(p=>x(p.t).toFixed(1)+','+y(p.v).toFixed(1)).join(' ')}"/>${pts.map(p=>`<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3.5" fill="var(--brand,#0d9488)"/>`).join('')}<text x="${L}" y="${H-5}" font-size="11" fill="currentColor" opacity=".7">${fmt(t0)}</text><text x="${W-R}" y="${H-5}" font-size="11" text-anchor="end" fill="currentColor" opacity=".7">${fmt(t1)}</text></svg></div><p class="xs muted">Self-reported mood, 1 (very low) to 5 (very good). ${pts.length} recorded entries; days without entries are not plotted and are not treated as low mood.</p>`;
 }
 function renderMoodPage() {
-  const d=monitorData(), recent=d.moods.slice().sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,10);
-  const ed=monitorEditId?d.moods.find(m=>m.id===monitorEditId):null, e=ed||{}, now=new Date();
-  const emo=['Calm','Happy','Hopeful','Sad','Anxious','Stressed','Angry','Numb','Mixed / unsure'];
-  return `<div class="page-h"><div><h1>Mood check-in</h1><p class="muted">Notice how you're feeling over time, without judging yourself.</p></div></div><div class="banner info mb16">${ic('info',16)}<span>Check-ins are self-reported wellness notes, not a diagnosis. Only mood is required; skip anything else. Stored on this device only.</span></div><div class="card p20 mb24"><h3 class="mb16">${ed?'Edit check-in':'How are you feeling right now?'}</h3><form data-monitor="mood" onsubmit="saveMoodCheckin(event)"><label class="field-label" for="wmood">Overall mood (1 = very low, 5 = very good) *</label><select class="input mb16" id="wmood" name="mood" required>${['Choose a rating','1 · Very low','2 · Low','3 · Okay / mixed','4 · Good','5 · Very good'].map((t,i)=>`<option value="${i||''}"${e.mood===i&&i?' selected':''}>${t}</option>`).join('')}</select><label class="field-label" for="wemotion">Main feeling (optional)</label><select class="input mb16" id="wemotion" name="emotion"><option value="">Skip</option>${emo.map(x=>`<option${e.emotion===x?' selected':''}>${x}</option>`).join('')}</select><div class="grid g2"><div><label class="field-label" for="wstress">Stress (0–10, optional)</label><input class="input mb16" id="wstress" name="stress" type="number" inputmode="numeric" min="0" max="10" step="1" value="${esc(e.stress??'')}" placeholder="Skip"></div><div><label class="field-label" for="wsleep">Sleep last night, hours (optional)</label><input class="input mb16" id="wsleep" name="sleep" type="number" inputmode="decimal" min="0" max="24" step="0.5" value="${esc(e.sleep??'')}" placeholder="Skip"></div></div><label class="field-label" for="wtime">Date and time of this check-in</label><input class="input mb16" id="wtime" name="at" type="datetime-local" max="${mLocalInput(now)}" value="${mLocalInput(ed?new Date(ed.at):now)}"><p class="xs muted mb16" style="margin-top:-8px">Change this only if you are intentionally recording an earlier check-in.</p><label class="field-label" for="wtrigger">Anything that may have affected your mood? (optional)</label><textarea class="input mb16" id="wtrigger" name="note" rows="3" maxlength="1500" placeholder="A situation, activity, or something that helped…">${esc(e.note||'')}</textarea><div class="row wrap" style="gap:8px"><button class="btn btn-p" type="submit" id="mood-save">${ed?'Save changes':'Save mood check-in'}</button>${ed?'<button class="btn btn-o" type="button" onclick="cancelMoodEdit()">Cancel</button>':''}</div></form></div><div class="card p20"><h3 class="mb16">Recent check-ins</h3>${recent.length?recent.map(m=>`<div class="row sb" style="padding:12px 0;border-bottom:1px solid var(--line);gap:12px;align-items:flex-start"><div style="min-width:0"><strong>${esc(m.emotion||'Mood')} · ${esc(m.mood)}/5</strong><p class="xs muted">${esc(monitorDateLabel(m.at))}${m.stress!==''&&m.stress!=null?` · Stress ${esc(m.stress)}/10`:''}${m.sleep!==''&&m.sleep!=null?` · ${esc(m.sleep)} h sleep`:''}</p>${m.note?`<p class="muted mt8" style="overflow-wrap:anywhere">${esc(m.note)}</p>`:''}</div><div class="row" style="gap:6px;flex-shrink:0"><button class="btn btn-o btn-sm" onclick="editMoodCheckin('${esc(m.id)}')" aria-label="Edit check-in from ${esc(monitorDateLabel(m.at))}">Edit</button><button class="btn btn-o btn-sm" onclick="deleteMoodCheckin('${esc(m.id)}')" aria-label="Delete check-in from ${esc(monitorDateLabel(m.at))}">Delete</button></div></div>`).join(''):'<p class="muted">No check-ins yet. Your saved entries will appear here.</p>'}</div>`;
+  const isDoc = typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor();
+  const d = monitorData(), recent = d.moods.slice().sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,10);
+  const ed = (!isDoc && monitorEditId) ? d.moods.find(m=>m.id===monitorEditId) : null, e = ed || {}, now = new Date();
+  const emo = ['Calm','Happy','Hopeful','Sad','Anxious','Stressed','Angry','Numb','Mixed / unsure'];
+
+  let topCard = '';
+  if (isDoc) {
+    const latest = recent[0];
+    topCard = `
+    <div class="banner info mb16" style="background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.3);display:flex;align-items:center;gap:10px">
+      ${ic('shield', 18)}
+      <div><strong>${t('Clinician Review Mode')} (${esc(Auth.currentUser ? Auth.currentUser.name : 'Dr. Sarah Mitchell, MD')})</strong> — ${t('Viewing patient mood check-in history in read-only mode.')}</div>
+    </div>
+    <div class="card p20 mb24">
+      <div class="row sb wrap" style="gap:12px;margin-bottom:16px">
+        <div>
+          <h3>${t('Patient Mood Log Summary')} (${esc(State.profile ? State.profile.name : 'Patient')})</h3>
+          <p class="muted mt4">${t('Clinician read-only: Mood check-ins are recorded directly by the patient.')}</p>
+        </div>
+        <span class="chip ok" style="font-size:12px;padding:4px 10px">${recent.length} ${t('Total check-ins recorded')}</span>
+      </div>
+      ${latest ? `
+        <div class="grid g3 mb16">
+          <div class="card p16" style="background:var(--surface-2)">
+            <p class="xs muted">${t('Latest Mood Rating')}</p>
+            <p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px;color:var(--brand)">${latest.mood}/5</p>
+            <p class="xs mt4">${esc(latest.emotion || 'Not specified')}</p>
+          </div>
+          <div class="card p16" style="background:var(--surface-2)">
+            <p class="xs muted">${t('Stress Level')}</p>
+            <p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px">${latest.stress !== '' && latest.stress != null ? latest.stress + '/10' : '—'}</p>
+            <p class="xs mt4">${latest.stress ? (latest.stress >= 7 ? 'Elevated' : 'Moderate/Low') : 'Unrecorded'}</p>
+          </div>
+          <div class="card p16" style="background:var(--surface-2)">
+            <p class="xs muted">${t('Reported Sleep')}</p>
+            <p style="font-size:var(--fs-2xl);font-weight:700;margin-top:4px">${latest.sleep !== '' && latest.sleep != null ? latest.sleep + ' hrs' : '—'}</p>
+            <p class="xs mt4">${esc(monitorDateLabel(latest.at))}</p>
+          </div>
+        </div>
+        ${latest.note ? `<div class="card p12" style="background:var(--surface-2);border-left:3px solid var(--brand)"><p class="xs muted"><strong>Patient Note:</strong> "${esc(latest.note)}"</p></div>` : ''}
+      ` : `<p class="muted">${t('No check-ins recorded yet by patient.')}</p>`}
+    </div>
+    `;
+  } else {
+    topCard = `
+    <div class="banner info mb16">${ic('info',16)}<span>Check-ins are self-reported wellness notes, not a diagnosis. Only mood is required; skip anything else. Stored on this device only.</span></div>
+    <div class="card p20 mb24"><h3 class="mb16">${ed?'Edit check-in':'How are you feeling right now?'}</h3><form data-monitor="mood" onsubmit="saveMoodCheckin(event)"><label class="field-label" for="wmood">Overall mood (1 = very low, 5 = very good) *</label><select class="input mb16" id="wmood" name="mood" required>${['Choose a rating','1 · Very low','2 · Low','3 · Okay / mixed','4 · Good','5 · Very good'].map((t,i)=>`<option value="${i||''}"${e.mood===i&&i?' selected':''}>${t}</option>`).join('')}</select><label class="field-label" for="wemotion">Main feeling (optional)</label><select class="input mb16" id="wemotion" name="emotion"><option value="">Skip</option>${emo.map(x=>`<option${e.emotion===x?' selected':''}>${x}</option>`).join('')}</select><div class="grid g2"><div><label class="field-label" for="wstress">Stress (0–10, optional)</label><input class="input mb16" id="wstress" name="stress" type="number" inputmode="numeric" min="0" max="10" step="1" value="${esc(e.stress??'')}" placeholder="Skip"></div><div><label class="field-label" for="wsleep">Sleep last night, hours (optional)</label><input class="input mb16" id="wsleep" name="sleep" type="number" inputmode="decimal" min="0" max="24" step="0.5" value="${esc(e.sleep??'')}" placeholder="Skip"></div></div><label class="field-label" for="wtime">Date and time of this check-in</label><input class="input mb16" id="wtime" name="at" type="datetime-local" max="${mLocalInput(now)}" value="${mLocalInput(ed?new Date(ed.at):now)}"><p class="xs muted mb16" style="margin-top:-8px">Change this only if you are intentionally recording an earlier check-in.</p><label class="field-label" for="wtrigger">Anything that may have affected your mood? (optional)</label><textarea class="input mb16" id="wtrigger" name="note" rows="3" maxlength="1500" placeholder="A situation, activity, or something that helped…">${esc(e.note||'')}</textarea><div class="row wrap" style="gap:8px"><button class="btn btn-p" type="submit" id="mood-save">${ed?'Save changes':'Save mood check-in'}</button>${ed?'<button class="btn btn-o" type="button" onclick="cancelMoodEdit()">Cancel</button>':''}</div></form></div>
+    `;
+  }
+
+  return `
+  <div class="page-h"><div><h1>${isDoc ? t('Patient Mood Check-ins') : t('Mood check-in')}</h1><p class="muted">${isDoc ? t('Review patient mood progression and patterns.') : t("Notice how you're feeling over time, without judging yourself.")}</p></div></div>
+  ${topCard}
+  <div class="card p20"><h3 class="mb16">${isDoc ? t("Patient's Recorded Check-ins") : t('Recent check-ins')}</h3>
+  ${recent.length ? recent.map(m => `
+    <div class="row sb" style="padding:12px 0;border-bottom:1px solid var(--line);gap:12px;align-items:flex-start">
+      <div style="min-width:0">
+        <strong>${esc(m.emotion||'Mood')} · ${esc(m.mood)}/5</strong>
+        <p class="xs muted">${esc(monitorDateLabel(m.at))}${m.stress!==''&&m.stress!=null?` · Stress ${esc(m.stress)}/10`:''}${m.sleep!==''&&m.sleep!=null?` · ${esc(m.sleep)} h sleep`:''}</p>
+        ${m.note ? `<p class="muted mt8" style="overflow-wrap:break-word">${esc(m.note)}</p>` : ''}
+      </div>
+      ${isDoc ? `
+        <span class="xs muted" style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;padding:4px 8px;background:var(--surface-2);border-radius:var(--r1)">
+          ${ic('shield', 12)} Read-only
+        </span>
+      ` : `
+        <div class="row" style="gap:6px;flex-shrink:0">
+          <button class="btn btn-o btn-sm" onclick="editMoodCheckin('${esc(m.id)}')" aria-label="Edit check-in from ${esc(monitorDateLabel(m.at))}">Edit</button>
+          <button class="btn btn-o btn-sm" onclick="deleteMoodCheckin('${esc(m.id)}')" aria-label="Delete check-in from ${esc(monitorDateLabel(m.at))}">Delete</button>
+        </div>
+      `}
+    </div>
+  `).join('') : '<p class="muted">No check-ins yet. Saved entries will appear here.</p>'}
+  </div>`;
 }
-function editMoodCheckin(id){monitorEditId=id;render();window.scrollTo(0,0);}
+function editMoodCheckin(id){
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    toast('Clinicians have read-only access. Only patients can modify mood check-ins.', true);
+    return;
+  }
+  monitorEditId=id;render();window.scrollTo(0,0);
+}
 function cancelMoodEdit(){monitorEditId=null;render();}
-function deleteMoodCheckin(id){if(!confirm('Delete this check-in from this browser? This cannot be undone.'))return;const d=monitorData();d.moods=d.moods.filter(m=>m.id!==id);if(monitorEditId===id)monitorEditId=null;saveMonitorData(d);}
+function deleteMoodCheckin(id){
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    toast('Clinicians have read-only access. Patient mood logs cannot be deleted.', true);
+    return;
+  }
+  if(!confirm('Delete this check-in from this browser? This cannot be undone.'))return;const d=monitorData();d.moods=d.moods.filter(m=>m.id!==id);if(monitorEditId===id)monitorEditId=null;saveMonitorData(d);
+}
 function saveMoodCheckin(e) {
-  e.preventDefault(); if(monitorSaving)return;
+  e.preventDefault();
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    toast('Clinicians have read-only access. Mood check-ins can only be logged by the patient.', true);
+    return;
+  }
+  if(monitorSaving)return;
   const f=new FormData(e.target), mood=Number(f.get('mood')), num=(k,lo,hi)=>{const s=String(f.get(k)||'').trim();if(s==='')return '';const n=Number(s);return isFinite(n)&&n>=lo&&n<=hi?n:NaN;};
   if(!Number.isInteger(mood)||mood<1||mood>5){toast('Choose a mood rating first.',true);return;}
   const stress=num('stress',0,10),sleep=num('sleep',0,24);
@@ -70,14 +157,131 @@ function exportWellbeingData(){
   const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='wellbeing-checkins-export.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function renderAssessmentPage() {
+  const isDoc = typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor();
   const d=monitorData(), last=d.assessments[d.assessments.length-1];
   const qs=[['energy','How has your energy been today?'],['worry','How much have worry or tension affected you?'],['sleep','How has your sleep been?'],['focus','How easy was it to focus on everyday tasks?'],['connection','How connected to others have you felt?']];
-  return `<div class="page-h"><div><h1>Daily wellbeing reflection</h1><p class="muted">A short check-in to help you reflect on recent patterns.</p></div></div><div class="banner info mb16">${ic('shield',16)}<span>This is an informal reflection, not a validated clinical screening test. It cannot diagnose a condition or replace professional care.</span></div><div class="card p20 mb24"><form onsubmit="saveWellbeingAssessment(event)"><p class="muted mb16">Choose the answer that best fits today. There are no right or wrong answers.</p>${qs.map(([name,q])=>`<div class="mb16"><label class="field-label" for="ass-${name}">${q}</label><select class="input" id="ass-${name}" name="${name}" required><option value="">Select one</option><option value="1">1 · Not at all / very difficult</option><option value="2">2 · A little</option><option value="3">3 · Somewhat</option><option value="4">4 · Quite a lot / mostly well</option><option value="5">5 · Very much / very well</option></select></div>`).join('')}<label class="field-label" for="ass-note">Anything you'd like to remember? (optional)</label><textarea class="input mb16" id="ass-note" name="note" rows="3" maxlength="1000"></textarea><button class="btn btn-p" type="submit">Save reflection</button></form></div><div class="card p20"><h3>Last saved reflection</h3>${last?`<p class="muted mt8">${esc(monitorDateLabel(last.at))}</p><p class="mt8">Average response: <strong>${last.average}/5</strong></p><p class="muted mt8">This score is a personal reflection summary only, not a clinical score.</p>`:'<p class="muted mt8">No reflection saved yet.</p>'}</div>`;
+
+  let bodyHtml = '';
+  if (isDoc) {
+    bodyHtml = `
+    <div class="banner info mb16" style="background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.3);display:flex;align-items:center;gap:10px">
+      ${ic('shield', 18)}
+      <div><strong>${t('Clinician Review Mode')} (${esc(Auth.currentUser ? Auth.currentUser.name : 'Dr. Sarah Mitchell, MD')})</strong> — ${t('Viewing patient daily reflection scores in read-only mode.')}</div>
+    </div>
+    <div class="card p20 mb24">
+      <h3 class="mb12">${t('Patient Daily Reflection Review')} (${esc(State.profile ? State.profile.name : 'Patient')})</h3>
+      <p class="muted mb16">${t('Clinician read-only: Daily reflections are recorded by the patient to track self-perception across 5 wellness domains.')}</p>
+      ${last ? `
+        <div class="row sb mb16" style="background:var(--surface-2);padding:12px 16px;border-radius:var(--r1)">
+          <div>
+            <strong>${t('Latest Assessment Submitted')}</strong>
+            <p class="xs muted mt4">${esc(monitorDateLabel(last.at))}</p>
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:var(--fs-2xl);font-weight:700;color:var(--brand)">${last.average}/5</span>
+            <p class="xs muted">${t('Average reflection score')}</p>
+          </div>
+        </div>
+        <div class="stack12">
+          ${qs.map(([name, q]) => {
+            const val = (last.answers && last.answers[name]) || '—';
+            const valLabel = val === 1 ? '1 · Not at all / Very difficult' :
+                             val === 2 ? '2 · A little' :
+                             val === 3 ? '3 · Somewhat' :
+                             val === 4 ? '4 · Quite a lot / Mostly well' :
+                             val === 5 ? '5 · Very much / Very well' : '—';
+            return `
+              <div style="padding:10px 14px;border:1px solid var(--line);border-radius:var(--r1);display:flex;justify-content:space-between;align-items:center;gap:12px">
+                <div>
+                  <p style="font-weight:600;font-size:14px">${esc(q)}</p>
+                  <p class="xs muted" style="text-transform:capitalize">${name}</p>
+                </div>
+                <span class="chip ok" style="font-size:12px;padding:3px 8px">${valLabel}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${last.note ? `<div class="card p12 mt16" style="background:var(--surface-2);border-left:3px solid var(--brand)"><p class="xs muted"><strong>Patient Reflection Note:</strong> "${esc(last.note)}"</p></div>` : ''}
+      ` : `<p class="muted">${t('No daily reflections saved by patient yet.')}</p>`}
+    </div>
+    `;
+  } else {
+    bodyHtml = `
+    <div class="banner info mb16">${ic('shield',16)}<span>This is an informal reflection, not a validated clinical screening test. It cannot diagnose a condition or replace professional care.</span></div>
+    <div class="card p20 mb24"><form onsubmit="saveWellbeingAssessment(event)"><p class="muted mb16">Choose the answer that best fits today. There are no right or wrong answers.</p>${qs.map(([name,q])=>`<div class="mb16"><label class="field-label" for="ass-${name}">${q}</label><select class="input" id="ass-${name}" name="${name}" required><option value="">Select one</option><option value="1">1 · Not at all / very difficult</option><option value="2">2 · A little</option><option value="3">3 · Somewhat</option><option value="4">4 · Quite a lot / mostly well</option><option value="5">5 · Very much / very well</option></select></div>`).join('')}<label class="field-label" for="ass-note">Anything you'd like to remember? (optional)</label><textarea class="input mb16" id="ass-note" name="note" rows="3" maxlength="1000"></textarea><button class="btn btn-p" type="submit">Save reflection</button></form></div>
+    <div class="card p20"><h3>Last saved reflection</h3>${last?`<p class="muted mt8">${esc(monitorDateLabel(last.at))}</p><p class="mt8">Average response: <strong>${last.average}/5</strong></p><p class="muted mt8">This score is a personal reflection summary only, not a clinical score.</p>`:'<p class="muted mt8">No reflection saved yet.</p>'}</div>
+    `;
+  }
+
+  return `<div class="page-h"><div><h1>${isDoc ? t('Patient Daily Reflection') : t('Daily wellbeing reflection')}</h1><p class="muted">${isDoc ? t('Review patient self-reported reflection metrics.') : t('A short check-in to help you reflect on recent patterns.')}</p></div></div>${bodyHtml}`;
 }
-function saveWellbeingAssessment(e){e.preventDefault();const f=new FormData(e.target),keys=['energy','worry','sleep','focus','connection'];const values=keys.map(k=>Number(f.get(k)));if(values.some(v=>!v||v<1||v>5)){toast('Please answer each reflection question or skip the assessment.',true);return;}const d=monitorData();d.assessments.push({id:'a'+Date.now(),at:new Date().toISOString(),answers:Object.fromEntries(keys.map(k=>[k,Number(f.get(k))])),average:Math.round(values.reduce((a,b)=>a+b,0)/values.length*10)/10,note:String(f.get('note')||'').trim()});saveMonitorData(d);}
-function renderJournalPage(){const d=monitorData(),entries=d.journal.slice().reverse().slice(0,12);return `<div class="page-h"><div><h1>Private journal</h1><p class="muted">Write for yourself. You decide what to record.</p></div></div><div class="banner info mb16">${ic('shield',16)}<span>Entries are stored in this browser's local storage in this prototype. This is not encrypted clinical-record storage; avoid entering information you would not want saved on this device.</span></div><div class="card p20 mb24"><form onsubmit="saveJournalEntry(event)"><label class="field-label" for="jtitle">Title (optional)</label><input class="input mb16" id="jtitle" name="title" maxlength="100" placeholder="A thought, moment, or reflection"><label class="field-label" for="jbody">What's on your mind?</label><textarea class="input mb16" id="jbody" name="body" rows="6" maxlength="5000" required placeholder="Write freely…"></textarea><label class="field-label" for="jtag">Tag (optional)</label><select class="input mb16" id="jtag" name="tag"><option>General</option><option>Stress</option><option>Sleep</option><option>Relationships</option><option>School or work</option><option>Something that helped</option></select><button class="btn btn-p" type="submit">Save journal entry</button></form></div><div class="card p20"><h3 class="mb16">Recent entries</h3>${entries.length?entries.map(j=>`<article style="padding:12px 0;border-bottom:1px solid var(--line)"><div class="row sb"><strong>${esc(j.title||'Journal entry')}</strong><span class="chip">${esc(j.tag||'General')}</span></div><p class="xs muted mt4">${esc(monitorDateLabel(j.at))}</p><p class="mt8" style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(j.body)}</p><button class="btn btn-sm btn-g mt8" onclick="deleteJournalEntry('${j.id}')">Delete entry</button></article>`).join(''):'<p class="muted">Your journal entries will appear here.</p>'}</div>`;}
-function saveJournalEntry(e){e.preventDefault();const f=new FormData(e.target),body=String(f.get('body')||'').trim();if(!body){toast('Write a little before saving.',true);return;}const d=monitorData();d.journal.push({id:'j'+Date.now(),at:new Date().toISOString(),title:String(f.get('title')||'').trim(),body,tag:String(f.get('tag')||'General')});saveMonitorData(d);}
-function deleteJournalEntry(id){if(!confirm('Delete this journal entry from this browser?'))return;const d=monitorData();d.journal=d.journal.filter(j=>j.id!==id);store.set(MONITOR_KEY,JSON.stringify(d));render();}
+function saveWellbeingAssessment(e){
+  e.preventDefault();
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    toast('Clinicians have read-only access. Daily reflections can only be submitted by the patient.', true);
+    return;
+  }
+  const f=new FormData(e.target),keys=['energy','worry','sleep','focus','connection'];const values=keys.map(k=>Number(f.get(k)));if(values.some(v=>!v||v<1||v>5)){toast('Please answer each reflection question or skip the assessment.',true);return;}const d=monitorData();d.assessments.push({id:'a'+Date.now(),at:new Date().toISOString(),answers:Object.fromEntries(keys.map(k=>[k,Number(f.get(k))])),average:Math.round(values.reduce((a,b)=>a+b,0)/values.length*10)/10,note:String(f.get('note')||'').trim()});saveMonitorData(d);
+}
+function renderJournalPage(){
+  const isDoc = typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor();
+  const d=monitorData(), entries=d.journal.slice().reverse().slice(0,12);
+
+  return `
+  <div class="page-h">
+    <div>
+      <h1>${isDoc ? t('Patient Private Journal (Clinician Review)') : t('Private journal')}</h1>
+      <p class="muted">${isDoc ? t('Review patient-shared personal reflections and logs.') : t('Write for yourself. You decide what to record.')}</p>
+    </div>
+  </div>
+  ${isDoc ? `
+  <div class="banner info mb16" style="background:rgba(14,165,233,0.12);border-color:rgba(14,165,233,0.3);display:flex;align-items:center;gap:10px">
+    ${ic('shield', 18)}
+    <div><strong>${t('Clinician Review Mode')} (${esc(Auth.currentUser ? Auth.currentUser.name : 'Dr. Sarah Mitchell, MD')})</strong> — ${t('Reading patient journal reflections in read-only mode. Clinicians cannot edit, write, or delete entries.')}</div>
+  </div>
+  ` : `
+  <div class="banner info mb16">${ic('shield',16)}<span>Entries are stored in this browser's local storage in this prototype. This is not encrypted clinical-record storage; avoid entering information you would not want saved on this device.</span></div>
+  <div class="card p20 mb24"><form onsubmit="saveJournalEntry(event)"><label class="field-label" for="jtitle">Title (optional)</label><input class="input mb16" id="jtitle" name="title" maxlength="100" placeholder="A thought, moment, or reflection"><label class="field-label" for="jbody">What's on your mind?</label><textarea class="input mb16" id="jbody" name="body" rows="6" maxlength="5000" required placeholder="Write freely…"></textarea><label class="field-label" for="jtag">Tag (optional)</label><select class="input mb16" id="jtag" name="tag"><option>General</option><option>Stress</option><option>Sleep</option><option>Relationships</option><option>School or work</option><option>Something that helped</option></select><button class="btn btn-p" type="submit">Save journal entry</button></form></div>
+  `}
+  <div class="card p20">
+    <h3 class="mb16">${isDoc ? t("Patient's Journal Entries") : t('Recent entries')}</h3>
+    ${entries.length ? entries.map(j => `
+      <article style="padding:12px 0;border-bottom:1px solid var(--line)">
+        <div class="row sb">
+          <strong>${esc(j.title||'Journal entry')}</strong>
+          <span class="chip">${esc(j.tag||'General')}</span>
+        </div>
+        <p class="xs muted mt4">${esc(monitorDateLabel(j.at))}</p>
+        <p class="mt8" style="white-space:pre-wrap;overflow-wrap:break-word">${esc(j.body)}</p>
+        ${isDoc ? `
+          <div class="mt8">
+            <span class="xs muted" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface-2);border-radius:var(--r1)">
+              ${ic('shield', 12)} Clinician Read-Only Log
+            </span>
+          </div>
+        ` : `
+          <button class="btn btn-sm btn-g mt8" onclick="deleteJournalEntry('${j.id}')">Delete entry</button>
+        `}
+      </article>
+    `).join('') : '<p class="muted">No journal entries recorded yet.</p>'}
+  </div>
+  `;
+}
+function saveJournalEntry(e){
+  e.preventDefault();
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    toast('Clinicians have read-only access. Only patients can write journal entries.', true);
+    return;
+  }
+  const f=new FormData(e.target),body=String(f.get('body')||'').trim();if(!body){toast('Write a little before saving.',true);return;}const d=monitorData();d.journal.push({id:'j'+Date.now(),at:new Date().toISOString(),title:String(f.get('title')||'').trim(),body,tag:String(f.get('tag')||'General')});saveMonitorData(d);
+}
+function deleteJournalEntry(id){
+  if (typeof Auth !== 'undefined' && Auth.isDoctor && Auth.isDoctor()) {
+    toast('Clinicians have read-only access. Patient journal entries cannot be deleted.', true);
+    return;
+  }
+  if(!confirm('Delete this journal entry from this browser?'))return;const d=monitorData();d.journal=d.journal.filter(j=>j.id!==id);store.set(MONITOR_KEY,JSON.stringify(d));render();
+}
 function renderWellbeingToolkit(){const items=[['Grounding pause','Notice five things you can see, four you can feel, and three you can hear. Stop if this feels uncomfortable.'],['Slow breathing','If comfortable, breathe gently and naturally for a minute. Do not force deep breaths; return to normal breathing if dizzy.'],['Small next step','Choose one manageable action: drink water, stretch gently, step outside with permission, or message someone you trust.'],['Sleep reflection','Try noting your usual bedtime, wake time, and how rested you feel. Focus on patterns rather than perfection.'],['Reach out','Consider talking with a trusted adult, counsellor, or qualified mental health professional if distress persists or affects daily life.']];return `<div class="page-h"><div><h1>Wellbeing toolkit</h1><p class="muted">Small, optional practices for everyday reflection.</p></div></div><div class="banner info mb16">${ic('heart-pulse',16)}<span>These are general wellbeing ideas, not treatment. Choose what feels appropriate for you and skip anything that makes you uncomfortable.</span></div><div class="grid g2">${items.map((x,i)=>`<div class="card p20"><div class="row" style="gap:12px;align-items:flex-start"><span class="ic-box">${ic(i===4?'message-circle':i===3?'clock':i===2?'activity':'heart-pulse')}</span><div><h3>${esc(x[0])}</h3><p class="muted mt8">${esc(x[1])}</p></div></div></div>`).join('')}</div><div class="card p20 mt24"><h3>When you need more support</h3><p class="muted mt8">An app cannot provide emergency care or replace a professional assessment. If you feel unsafe or need urgent help, contact local emergency services or a trusted person who can help you access support.</p></div>`;}
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Wellbeing Overview', icon: 'dashboard' },
