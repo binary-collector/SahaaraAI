@@ -25,10 +25,11 @@ Fully configured dummy testing accounts are built directly into the system to de
   - **🩺 Doctor Account**: `demo.prototype@sahaara.ai` (or `sarah.mitchell@sahaara.ai`) · `password123`
 
 ### What These Prototypes Demonstrate:
-1. **Clinical Personas**:
-   - **Patient Persona**: `Ananya Sharma`, Age 42, Patient ID `PAT-84920`, Condition: `Type 2 diabetes`, Clinician: `Dr. Rajesh Patel, MD`, Emergency Contact: `Vikram Sharma (Spouse)` at `+91 98765 43210`.
-   - **Doctor Persona**: `Dr. Sarah Mitchell`, Age 34, Patient ID `CT-84920`, Cardiometabolic Specialist, Emergency Contact: `David Mitchell` at `+1 (555) 019-2834`.
-2. **7 Multi-Category Prescriptions**:
+1. **Clinical Personas & Permissions**:
+   - **👤 Patient Persona (`Ananya Sharma`)**: Age 42, Patient ID `PAT-84920`, Condition: `Type 2 diabetes`, Clinician: `Dr. Rajesh Patel, MD`, Emergency Contact: `Vikram Sharma (Spouse)` at `+91 98765 43210`. **Full Read & Write Access**: Patient logs their daily self-care adherence, mood check-ins, reflection assessments, and private journal entries.
+   - **🩺 Doctor Persona (`Dr. Sarah Mitchell, MD`)**: Reviewing Clinician mode. **Clinician Read-Only Access**: Dr. Mitchell reviews patient Ananya Sharma's clinical adherence logs, mood trend graphs, reflection score breakdowns, and private journal reflections in tamper-proof read-only mode, with full access to clinical reports and the Sahaara AI Assistant.
+2. **🌐 Full Hindi Language Support (हिन्दी)**: Complete bilingual localization across navigation, adherence dashboards, task cards, wellbeing monitors, and AI dialogs, switchable with a single tap via the global language toggle (`EN` / `हिन्दी`).
+3. **7 Multi-Category Prescriptions**:
    - 🌬️ **Breathing**: Morning Diaphragmatic Box Breathing (Pranayama) (`07:30`)
    - 🍏 **Diet**: Balanced Breakfast & Fasting Blood Sugar Log (`08:00`)
    - 💊 **Medication**: Metformin Hydrochloride 500mg (`08:30`, `19:30`)
