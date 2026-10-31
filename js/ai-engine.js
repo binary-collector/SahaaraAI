@@ -310,7 +310,7 @@ function renderSessionsSidebar(mode) {
   var items = AI.sessions.map(function(s) {
     var isActive = s.id === AI.currentSessionId;
     return '<div class="sess-item' + (isActive ? ' active' : '') + '" role="button" tabindex="0" aria-current="' + isActive + '" onclick="switchSession(\'' + s.id + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchSession(\'' + s.id + '\')}" title="' + esc(s.title || 'New Chat') + '">' +
-      '<span class="sess-icon">' + (s.messages && s.messages.length > 0 ? '💬' : '✨') + '</span>' +
+      '<span class="sess-icon">' + (s.messages && s.messages.length > 0 ? '💬' : ic('sparkles', 14)) + '</span>' +
       '<div style="flex:1;min-width:0"><div class="sess-title">' + esc(s.title || 'New Chat') + '</div>' +
       '<div class="sess-meta">' + sessDate(s) + ' · ' + (s.messageCount || 0) + ' msgs</div></div>' +
       '<span class="sess-del" onclick="event.stopPropagation();deleteSession(\'' + s.id + '\')" title="Delete">✕</span>' +
@@ -346,7 +346,7 @@ function renderAIChatInner(mode) {
     return '<button class="ai-quick-chip" onclick="sendAIQuickEncoded(\'' + encoded + '\')">' + esc(c) + '</button>';
   }).join('');
   return '<div class="ai-chat-layout">' + sidebar + '<div class="ai-chat-main">' +
-    '<div class="ai-header"><div class="ai-title"><div class="ai-avatar">✨</div><div>' +
+    '<div class="ai-header"><div class="ai-title"><div class="ai-avatar">' + ic('sparkles', 20) + '</div><div>' +
     '<h3>Sahaara ' + (AI.llmVerified
       ? '<span class="chip ok" style="font-size:9px;margin-left:4px">Smart AI</span>'
       : '<span class="chip ok" style="font-size:9px;margin-left:4px">Active</span>') + '</h3>' +
@@ -361,7 +361,7 @@ function renderAIChatInner(mode) {
     '<div class="ai-messages" id="ai-msgs-' + (mode === 'panel' ? 'panel' : 'full') + '" aria-live="polite">' +
     AI.messages.map(function(m) { return renderAIMessage(m); }).join('') +
     (AI.isThinking
-      ? '<div class="ai-msg bot ai-thinking-indicator" aria-live="polite"><div class="msg-avatar">✨</div><div class="msg-body"><div class="ai-typing" role="status" aria-label="Sahaara is thinking"><span></span><span></span><span></span></div><div class="meta">Sahaara is thinking…</div></div></div>'
+      ? '<div class="ai-msg bot ai-thinking-indicator" aria-live="polite"><div class="msg-avatar">' + ic('sparkles', 16) + '</div><div class="msg-body"><div class="ai-typing" role="status" aria-label="Sahaara is thinking"><span></span><span></span><span></span></div><div class="meta">Sahaara is thinking…</div></div></div>'
       : '') +
     '</div>' +
     (AI.pending ? '<div class="ai-compose-tools"><button class="ai-stop-btn" onclick="stopAIGeneration()" aria-label="Stop generating">Stop generating</button></div>' : '') +
@@ -374,7 +374,7 @@ function renderAIChatInner(mode) {
 function renderAIMessage(m) {
   const time = new Date(m.time);
   const timeStr = isNaN(time.getTime()) ? '' : time.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  const avatar = m.role === 'bot' ? '✨' : '👤';
+  const avatar = m.role === 'bot' ? ic('sparkles', 16) : '👤';
   let srcLabel = '';
   if (m.role === 'bot') {
     if (m.error) srcLabel = ' · Built-in fallback (backend unavailable)';
@@ -2324,7 +2324,7 @@ class Voice3DOrb {
   _setupFallback() {
     this.failed = true; this.uniforms = null; this.stateTargets = this.stateTargets || {};
     try {
-      this.container.innerHTML = '<div class="voice-orb-fallback idle" aria-hidden="true"><span>✨</span></div>';
+      this.container.innerHTML = '<div class="voice-orb-fallback idle" aria-hidden="true"><span>' + ic('sparkles', 36) + '</span></div>';
       if (this.reducedMotion) this.container.querySelector('.voice-orb-fallback').style.animation = 'none';
     } catch (_) {}
     console.warn('CareTrack: WebGL/Three.js unavailable — using the CSS fallback orb.');

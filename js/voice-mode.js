@@ -299,7 +299,7 @@ function _initVoice3DOrb(state) {
     }
   } else if (VoiceMode.voice3dOrb.failed) {
     if (!container.querySelector('.voice-orb-fallback')) {
-      container.innerHTML = '<div class="voice-orb-fallback ' + (state || 'idle') + '" aria-hidden="true"><span>✨</span></div>';
+      container.innerHTML = '<div class="voice-orb-fallback ' + (state || 'idle') + '" aria-hidden="true"><span>' + ic('sparkles', 36) + '</span></div>';
     }
   }
   VoiceMode.voice3dOrb.setState(state || 'idle');
@@ -502,7 +502,7 @@ function renderVoiceMode() {
     const text = String(item.text || '');
     const stamp = item.time ? new Date(item.time) : null;
     const timeLabel = stamp && !isNaN(stamp.getTime()) ? stamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-    return '<article class="voice-history-item ' + (isUser ? 'from-user' : 'from-assistant') + '"><div class="voice-history-meta"><span>' + (isUser ? '🎤 You' : '✨ Sahaara') + '</span>' + (timeLabel ? '<time>' + esc(timeLabel) + '</time>' : '') + '</div><div class="vh-bot">' + esc(text.slice(0, 260)) + (text.length > 260 ? '…' : '') + '</div></article>';
+    return '<article class="voice-history-item ' + (isUser ? 'from-user' : 'from-assistant') + '"><div class="voice-history-meta"><span>' + (isUser ? '🎤 You' : ic('sparkles', 13) + ' Sahaara') + '</span>' + (timeLabel ? '<time>' + esc(timeLabel) + '</time>' : '') + '</div><div class="vh-bot">' + esc(text.slice(0, 260)) + (text.length > 260 ? '…' : '') + '</div></article>';
   }).join('');
   const historyContent = historyHtml || '<div class="voice-history-empty">Your voice messages and replies will appear here.</div>';
 
@@ -581,7 +581,7 @@ function renderVoiceMode() {
   });
   langSelector += '</select>';
 
-  el.innerHTML = '<div class="voice-header"><h3>✨ Sahaara <span class="vbadge">Voice AI</span>' +
+  el.innerHTML = '<div class="voice-header"><h3>' + ic('sparkles', 20) + ' Sahaara <span class="vbadge">Voice AI</span>' +
     (AI_CONFIG.LLM_ENDPOINT && AI.llmVerified ? ' <span class="vbadge" style="background:rgba(45,212,191,.18);color:#99f6e4">Smart AI</span>' : '') + '</h3>' +
     '<div class="row gap2 voice-header-actions">' + langSelector + dbBadgeHtml + '<button class="voice-close-btn" onclick="closeVoiceMode()" aria-label="Close voice mode">' + ic('x', 20) + '</button></div></div>' +
     '<div class="voice-mode-label">VOICE CONVERSATION MODE</div>' +

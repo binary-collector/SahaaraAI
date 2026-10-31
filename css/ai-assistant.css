@@ -53,7 +53,8 @@
 .voice-fab {
   position: fixed;
   bottom: 28px;
-  left: 28px;
+  right: 98px;
+  left: auto;
   z-index: 45;
   width: 60px;
   height: 60px;
@@ -252,6 +253,11 @@
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28);
 }
+.ai-header .ai-title .ai-avatar svg {
+  width: 20px;
+  height: 20px;
+  color: #fff;
+}
 .ai-header .ai-title h3 {
   font-size: 14.5px;
   font-weight: 700;
@@ -419,6 +425,11 @@
   background: var(--brand-soft, #f0fdf4);
   color: var(--brand, #0d9488);
   border: 1px solid var(--brand-200, #a7f3d0);
+}
+.ai-msg .msg-avatar svg {
+  width: 15px;
+  height: 15px;
+  color: inherit;
 }
 .ai-msg.user .msg-avatar {
   background: var(--surface-3, #e2e8f0);
@@ -1569,15 +1580,24 @@
 @media (max-width: 1024px) {
   .ai-fab {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-    right: 20px;
+    right: 18px;
+    left: auto;
     width: 54px;
     height: 54px;
   }
   .voice-fab {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-    left: 20px;
+    right: 80px;
+    left: auto;
     width: 54px;
     height: 54px;
+  }
+  .emergency-fab {
+    top: 72px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
   }
   .ai-fab svg,
   .voice-fab svg {
@@ -1590,14 +1610,23 @@
   .ai-fab {
     bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     right: 14px;
+    left: auto;
     width: 48px;
     height: 48px;
   }
   .voice-fab {
     bottom: calc(70px + env(safe-area-inset-bottom, 0px));
-    left: 14px;
+    right: 68px;
+    left: auto;
     width: 48px;
     height: 48px;
+  }
+  .emergency-fab {
+    top: 66px;
+    right: 12px;
+    width: 42px;
+    height: 42px;
+    font-size: 17px;
   }
   .ai-fab svg,
   .voice-fab svg {
